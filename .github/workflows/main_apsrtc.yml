@@ -1,0 +1,52 @@
+name: Deploy APSRTC to Azure App Service
+
+on:
+  push:
+    branches:
+      - main   # Change to 'master' if that's your default branch
+  workflow_dispatch:  # Allow manual trigger from GitHub Actions UI
+
+env:
+  AZURE_WEBAPP_NAME: apsrtc-live          # ← Set this to your Azure App Service name
+  PYTHON_VERSION: '3.11'                  # Matches runtime.txt
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Set up Python ─────────────────────────────────────────
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # ── 3. Install dependencies ───────────────────────────────────
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ── 4. (Optional) Run tests ───────────────────────────────────
+      # - name: Run tests
+      #   run: pytest
+
+      # ── 5. Zip artifact for deployment ───────────────────────────
+      - name: Zip deployment package
+        run: |
+          cd Backend
+          zip -r ../release.zip . -x "*.pyc" -x "__pycache__/*" -x ".venv/*" -x "*.db"
+
+      # ── 6. Deploy to Azure App Service ───────────────────────────
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: production
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: release.zip

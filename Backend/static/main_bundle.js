@@ -2,6 +2,7 @@ const API_BASE = ""; // Relative path for same-domain deployment
 let trackingMap = null;
 let trackingMarker = null;
 let trackingInterval = null;
+let routeRoadPath = [];   // Stores the OSRM road-following coordinates for the current route
 
 document.addEventListener("DOMContentLoaded", () => {
     initServiceVehicleSearch();
@@ -12,8 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Version Indicator
     const brand = document.querySelector('.navbar-brand');
-    if (brand) brand.innerHTML += ' <span style="font-size:0.6em; color:#ddd;">v4.0</span>';
-    console.log("APP VERSION: 4.0 ADVANCED MAPS LOADED");
+    if (brand) brand.innerHTML += ' <span style="font-size:0.6em; color:#ddd;">v5.0</span>';
+    console.log("APP VERSION: 5.0 ROAD-NETWORK ROUTING LOADED");
 });
 
 
@@ -151,6 +152,44 @@ const busIcon = L.icon({
     popupAnchor: [0, -20]
 });
 
+// ---------------------------
+// 🛣️ OSRM ROAD-NETWORK HELPER
+// ---------------------------
+
+/**
+ * Fetches a road-following path from the public OSRM demo server.
+ * @param {Array} waypoints  Array of [lat, lng] pairs (stop coordinates)
+ * @returns {Array|null}     Array of [lat, lng] for the road path, or null on failure
+ */
+async function fetchOsrmRoute(waypoints) {
+    try {
+        // OSRM expects coordinates as "lng,lat" pairs separated by semicolons
+        const coordStr = waypoints.map(([lat, lng]) => `${lng},${lat}`).join(';');
+        const url = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`;
+
+        const res = await fetch(url);
+        if (!res.ok) {
+            console.warn('OSRM response not OK:', res.status);
+            return null;
+        }
+
+        const data = await res.json();
+        if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
+            console.warn('OSRM returned no routes:', data.code);
+            return null;
+        }
+
+        // GeoJSON coordinates are [lng, lat] — convert to Leaflet's [lat, lng]
+        const roadCoords = data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+        console.log(`[OSRM] Road path fetched: ${roadCoords.length} points for ${waypoints.length} waypoints`);
+        return roadCoords;
+
+    } catch (err) {
+        console.warn('OSRM fetch failed (will use straight-line fallback):', err.message);
+        return null;
+    }
+}
+
 async function drawRouteOnMap(serviceNo) {
     try {
         const res = await fetch(`${API_BASE}/api/route_details/${serviceNo}`);
@@ -159,28 +198,52 @@ async function drawRouteOnMap(serviceNo) {
         const stops = await res.json();
         if (!stops || stops.length === 0) return;
 
-        const routeCoords = stops.map(s => [s.lat, s.lng]);
+        const stopCoords = stops.map(s => [s.lat, s.lng]);
 
-        // Draw Polyline
-        L.polyline(routeCoords, { color: 'blue', weight: 4, opacity: 0.7 }).addTo(trackingMap);
+        // --- Attempt OSRM road-following path ---
+        // Use all stops as waypoints (OSRM handles up to ~100 fine).
+        const roadPath = await fetchOsrmRoute(stopCoords);
 
-        // Add Stop Markers
-        stops.forEach(stop => {
+        if (roadPath && roadPath.length > 1) {
+            // ✅ Draw road-following polyline
+            routeRoadPath = roadPath;
+            L.polyline(roadPath, {
+                color: '#1a73e8',
+                weight: 5,
+                opacity: 0.85,
+                lineJoin: 'round'
+            }).addTo(trackingMap);
+            console.log('[Map] Road-following polyline drawn via OSRM.');
+        } else {
+            // ⚠️ Fallback: straight-line between stops
+            routeRoadPath = stopCoords;
+            L.polyline(stopCoords, {
+                color: 'blue',
+                weight: 4,
+                opacity: 0.7,
+                dashArray: '8, 8'   // Dashed to indicate it's a straight-line estimate
+            }).addTo(trackingMap);
+            console.warn('[Map] OSRM unavailable — using straight-line fallback (dashed).');
+        }
+
+        // --- Add Stop Markers (same as before) ---
+        stops.forEach((stop, i) => {
+            const isTerminal = (i === 0 || i === stops.length - 1);
             L.circleMarker([stop.lat, stop.lng], {
-                radius: 6,
-                fillColor: "#ff0000",
-                color: "#fff",
+                radius: isTerminal ? 9 : 6,
+                fillColor: isTerminal ? '#ff6600' : '#e00',
+                color: '#fff',
                 weight: 2,
                 opacity: 1,
-                fillOpacity: 0.8
-            }).addTo(trackingMap).bindPopup(`🚏 <b>${stop.name}</b>`);
+                fillOpacity: 0.9
+            }).addTo(trackingMap).bindPopup(`🚏 <b>${stop.name}</b>${isTerminal ? ' (Terminal)' : ''}`);
         });
 
-        // Fit map to route (so user sees something relevant)
-        trackingMap.fitBounds(routeCoords);
+        // Fit map to the full route
+        trackingMap.fitBounds(roadPath && roadPath.length > 1 ? roadPath : stopCoords);
 
     } catch (err) {
-        console.error("Error drawing route:", err);
+        console.error('Error drawing route:', err);
     }
 }
 

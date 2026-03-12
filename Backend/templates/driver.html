@@ -47,193 +47,319 @@
             </div>
 
             <div id="debugLog" class="mt-3 small text-muted font-monospace"
-                style="height: 100px; overflow-y: auto; background: #eee; padding: 10px; border-radius: 8px;">
+                style="height: 120px; overflow-y: auto; background: #eee; padding: 10px; border-radius: 8px;">
                 Logs will appear here...
             </div>
         </div>
     </div>
 
     <script>
-        let watchId = null;
-        const startBtn = document.getElementById("startBtn");
-        const stopBtn = document.getElementById("stopBtn");
-        const serviceSelect = document.getElementById("serviceSelect");
-        const statusContainer = document.getElementById("statusContainer");
-        const debugLog = document.getElementById("debugLog");
+        // ─────────────────────────────────────────────
+        // STATE
+        // ─────────────────────────────────────────────
+        let watchId        = null;   // watchPosition handle
+        let wakeLock       = null;   // Screen Wake Lock handle
+        let heartbeatTimer = null;   // Freeze-detection timer
+        let activeService  = null;   // Currently shared service number
+        let lastCoords     = null;   // Last known {lat,lng} — used for freeze detection
+        let offlineQueue   = [];     // Updates buffered during network drops
+        let isTracking     = false;
 
+        const startBtn        = document.getElementById("startBtn");
+        const stopBtn         = document.getElementById("stopBtn");
+        const serviceSelect   = document.getElementById("serviceSelect");
+        const statusContainer = document.getElementById("statusContainer");
+        const debugLog        = document.getElementById("debugLog");
+
+        // ─────────────────────────────────────────────
+        // GPS OPTIONS
+        // maximumAge:0  — never serve a cached position
+        // timeout:8000  — fail fast; watchPosition will immediately retry
+        // ─────────────────────────────────────────────
+        const GPS_OPTIONS = {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 8000
+        };
+
+        // ─────────────────────────────────────────────
+        // LOGGING
+        // ─────────────────────────────────────────────
         function log(msg) {
             const time = new Date().toLocaleTimeString();
-            const div = document.createElement("div");
+            const div  = document.createElement("div");
             div.innerHTML = `<span style="color:#888;">[${time}]</span> ${msg}`;
             debugLog.insertBefore(div, debugLog.firstChild);
-            // Limit logs
-            if (debugLog.children.length > 50) debugLog.removeChild(debugLog.lastChild);
+            if (debugLog.children.length > 60) debugLog.removeChild(debugLog.lastChild);
         }
 
-        startBtn.addEventListener("click", () => {
-            const serviceNo = serviceSelect.value;
-            if (!serviceNo) {
-                alert("Please select a service number first.");
+        // ─────────────────────────────────────────────
+        // SCREEN WAKE LOCK — keeps display on while tracking
+        // ─────────────────────────────────────────────
+        async function acquireWakeLock() {
+            if (!('wakeLock' in navigator)) {
+                log("ℹ️ Wake Lock API not supported on this browser.");
                 return;
             }
-
-            if (!navigator.geolocation) {
-                alert("Geolocation is not supported by your browser.");
-                return;
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                log("🔆 Wake Lock acquired — screen will stay on.");
+                wakeLock.addEventListener('release', () => {
+                    log("💤 Wake Lock released by system (screen off / tab hidden).");
+                    wakeLock = null;
+                });
+            } catch (err) {
+                log(`⚠️ Wake Lock failed: ${err.message}`);
             }
+        }
 
-            // UI Updates - Active State
-            startBtn.style.display = "none";
-            stopBtn.style.display = "block";
-            serviceSelect.disabled = true;
+        async function releaseWakeLock() {
+            if (wakeLock) {
+                await wakeLock.release().catch(() => {});
+                wakeLock = null;
+            }
+        }
 
-            statusContainer.classList.add("status-active", "pulse");
-            statusContainer.classList.remove("status-error");
-            statusContainer.querySelector(".status-text").innerHTML = `Connecting GPS... 🛰️`;
+        // ─────────────────────────────────────────────
+        // GPS SUCCESS CALLBACK
+        // ─────────────────────────────────────────────
+        function onLocationSuccess(pos) {
+            const { latitude, longitude, speed } = pos.coords;
+            const speedKmph = speed ? (speed * 3.6).toFixed(1) : 0;
 
-            log("Requesting GPS access...");
+            lastCoords = { lat: latitude, lng: longitude };
+            resetHeartbeat();   // GPS is alive — reset freeze timer
 
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 15000,  // Increased timeout for better reliability
-                maximumAge: 0    // Always get fresh location data
-            };
+            updateBackend(activeService, latitude, longitude, speedKmph);
+            setStatus(`Live 🟢 <br><small>Sharing for ${activeService}</small>`, true);
+        }
 
-            // Success Callback
-            const onLocationSuccess = (pos) => {
-                const { latitude, longitude, speed } = pos.coords;
-                // speed is in m/s, convert to km/h, default to 0 if null
-                const speedKmph = speed ? (speed * 3.6).toFixed(1) : 0;
+        // ─────────────────────────────────────────────
+        // GPS ERROR CALLBACK
+        // ─────────────────────────────────────────────
+        function onLocationError(err) {
+            console.error(err);
+            log(`⚠️ GPS Error (code ${err.code}): ${err.message}`);
 
-                updateBackend(serviceNo, latitude, longitude, speedKmph);
-
-                statusContainer.querySelector(".status-text").innerHTML = `Live 🟢 <br><small>Sharing for ${serviceNo}</small>`;
-                statusContainer.classList.add("status-active", "pulse");
-                statusContainer.classList.remove("status-error");
-            };
-
-            // Error Callback
-            const onLocationError = (err) => {
-                console.error(err);
-                log("⚠️ GPS Error (" + err.code + "): " + err.message);
-
-                if (err.code === 1) {
-                    alert("Please allow Location Access to share live tracking.");
-                } else if (err.code === 3) {
-                    log("⚠️ High accuracy timed out. Trying low accuracy...");
-                    // Fallback to low accuracy
-                    navigator.geolocation.getCurrentPosition(
-                        onLocationSuccess,
-                        (e) => {
-                            log("❌ Low accuracy failed too: " + e.message);
-                            statusContainer.querySelector(".status-text").innerHTML = "GPS Failed 🔴";
-                            statusContainer.classList.add("status-error");
-                        },
-                        { enableHighAccuracy: false, timeout: 15000 }
-                    );
-                    return; // Don't stop, try fallback
+            if (err.code === 1) {
+                // PERMISSION_DENIED — nothing we can do, stop
+                alert("Please allow Location Access to share live tracking.");
+                stopTracking();
+            } else if (err.code === 3) {
+                // TIMEOUT — watchPosition will retry automatically.
+                // Meanwhile send last known coords to keep backend alive.
+                log("⏱️ GPS timeout — watchPosition retrying...");
+                if (lastCoords) {
+                    log("📍 Sending last known position as keepalive...");
+                    updateBackend(activeService, lastCoords.lat, lastCoords.lng, 0);
                 }
+            }
+            // err.code 2 = POSITION_UNAVAILABLE — watchPosition retries on its own
+        }
 
-                statusContainer.classList.remove("status-active", "pulse");
-                statusContainer.classList.add("status-error");
-                statusContainer.querySelector(".status-text").innerHTML = "GPS Error 🔴";
-            };
+        // ─────────────────────────────────────────────
+        // HEARTBEAT — restarts GPS if no fix for 10 seconds
+        // ─────────────────────────────────────────────
+        function resetHeartbeat() {
+            clearTimeout(heartbeatTimer);
+            heartbeatTimer = setTimeout(() => {
+                if (!isTracking) return;
+                log("💓 Heartbeat: no GPS fix for 10 s — reinitialising watchPosition...");
+                restartWatch();
+            }, 10000);
+        }
 
-            // Force immediate update
-            navigator.geolocation.getCurrentPosition(onLocationSuccess, onLocationError, options);
-
-            // Start Watching
-            watchId = navigator.geolocation.watchPosition(onLocationSuccess, onLocationError, options);
-        });
-
-        stopBtn.addEventListener("click", () => {
-            stopTracking();
-        });
-
-        function stopTracking() {
+        function restartWatch() {
             if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
             }
+            // Immediate single fix then continuous watch
+            navigator.geolocation.getCurrentPosition(onLocationSuccess, onLocationError, GPS_OPTIONS);
+            watchId = navigator.geolocation.watchPosition(onLocationSuccess, onLocationError, GPS_OPTIONS);
+            log("🔄 watchPosition restarted.");
+        }
 
-            // UI Reset
-            stopBtn.style.display = "none";
-            startBtn.style.display = "block";
-            serviceSelect.disabled = false;
+        // ─────────────────────────────────────────────
+        // VISIBILITY CHANGE — resume when driver returns to tab/app
+        // ─────────────────────────────────────────────
+        document.addEventListener("visibilitychange", async () => {
+            if (!isTracking) return;
+            if (document.visibilityState === "hidden") {
+                log("📱 App moved to background — GPS continues via watchPosition...");
+            } else {
+                log("👁️ App returned to foreground — refreshing GPS & Wake Lock...");
+                await acquireWakeLock();   // Re-acquire (OS may have released it)
+                restartWatch();            // Force a fresh GPS fix immediately
+            }
+        });
 
-            statusContainer.classList.remove("status-active", "pulse", "status-error");
-            statusContainer.querySelector(".status-text").innerHTML = "Inactive ⚪";
+        // ─────────────────────────────────────────────
+        // START TRACKING
+        // ─────────────────────────────────────────────
+        startBtn.addEventListener("click", async () => {
+            const serviceNo = serviceSelect.value;
+            if (!serviceNo) { alert("Please select a service number first."); return; }
+            if (!navigator.geolocation) { alert("Geolocation is not supported by your browser."); return; }
 
+            activeService = serviceNo;
+            isTracking    = true;
+            lastCoords    = null;
+
+            startBtn.style.display  = "none";
+            stopBtn.style.display   = "block";
+            serviceSelect.disabled  = true;
+
+            setStatus("Connecting GPS... 🛰️", true);
+            log("Requesting GPS access...");
+
+            await acquireWakeLock();
+
+            // Immediate single fix + then continuous watch
+            navigator.geolocation.getCurrentPosition(onLocationSuccess, onLocationError, GPS_OPTIONS);
+            watchId = navigator.geolocation.watchPosition(onLocationSuccess, onLocationError, GPS_OPTIONS);
+            resetHeartbeat();
+        });
+
+        // ─────────────────────────────────────────────
+        // STOP TRACKING
+        // ─────────────────────────────────────────────
+        stopBtn.addEventListener("click", () => stopTracking());
+
+        function stopTracking() {
+            isTracking    = false;
+            activeService = null;
+            lastCoords    = null;
+
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            clearTimeout(heartbeatTimer);
+            releaseWakeLock();
+
+            stopBtn.style.display   = "none";
+            startBtn.style.display  = "block";
+            serviceSelect.disabled  = false;
+
+            setStatus("Inactive ⚪", false);
             log("Stopped tracking.");
         }
 
-        let updateRetryCount = 0;
-        const MAX_RETRIES = 3;
+        // ─────────────────────────────────────────────
+        // UI HELPER
+        // ─────────────────────────────────────────────
+        function setStatus(html, active) {
+            statusContainer.querySelector(".status-text").innerHTML = html;
+            if (active) {
+                statusContainer.classList.add("status-active", "pulse");
+                statusContainer.classList.remove("status-error");
+            } else {
+                statusContainer.classList.remove("status-active", "pulse", "status-error");
+            }
+        }
 
-        async function updateBackend(serviceNo, lat, lng, speed, retryAttempt = 0) {
+        // ─────────────────────────────────────────────
+        // BACKEND UPDATE — offline queue + exponential backoff
+        // ─────────────────────────────────────────────
+        const MAX_RETRIES = 5;
+        let flushPending  = false;
+
+        async function updateBackend(serviceNo, lat, lng, speed, attempt = 0) {
+            const payload = { service_no: serviceNo, lat, lng, speed };
+
             try {
                 const response = await fetch('/api/update_location', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        service_no: serviceNo,
-                        lat: lat,
-                        lng: lng,
-                        speed: speed
-                    })
+                    method:    'POST',
+                    headers:   { 'Content-Type': 'application/json' },
+                    body:      JSON.stringify(payload),
+                    keepalive: true   // survives page unload / background
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
                     log(`✅ Sent: ${lat.toFixed(5)}, ${lng.toFixed(5)} (${speed} km/h)`);
-                    updateRetryCount = 0;  // Reset retry counter on success
-
-                    // Ensure status shows active
-                    if (!statusContainer.classList.contains("status-active")) {
-                        statusContainer.classList.add("status-active", "pulse");
-                        statusContainer.classList.remove("status-error");
-                        statusContainer.querySelector(".status-text").innerHTML = `Live 🟢 <br><small>Sharing for ${serviceNo}</small>`;
-                    }
-                } else {
-                    let errorMessage = "Status " + response.status;
-                    try {
-                        const errData = await response.json();
-                        if (errData.error) errorMessage = errData.error;
-                    } catch (e) {
-                        const text = await response.text();
-                        if (text) errorMessage += " " + text.substring(0, 100);
-                    }
-
-                    log("❌ Error: " + errorMessage);
-                    console.error("Backend Error:", errorMessage);
-
-                    // Retry logic for server errors
-                    if (retryAttempt < MAX_RETRIES && response.status >= 500) {
-                        const delay = Math.pow(2, retryAttempt) * 1000;  // Exponential backoff
-                        log(`⏳ Retrying in ${delay / 1000}s... (Attempt ${retryAttempt + 1}/${MAX_RETRIES})`);
-                        setTimeout(() => updateBackend(serviceNo, lat, lng, speed, retryAttempt + 1), delay);
-                    } else {
-                        statusContainer.classList.remove("status-active", "pulse");
-                        statusContainer.classList.add("status-error");
-                        statusContainer.querySelector(".status-text").innerHTML = "Error 🔴";
-                    }
+                    setStatus(`Live 🟢 <br><small>Sharing for ${serviceNo}</small>`, true);
+                    flushOfflineQueue();   // Connection is back — flush queued items
+                    return;
                 }
-            } catch (err) {
-                log("❌ Network Error: " + err.message);
 
-                // Retry on network errors
-                if (retryAttempt < MAX_RETRIES) {
-                    const delay = Math.pow(2, retryAttempt) * 1000;  // Exponential backoff
-                    log(`⏳ Retrying in ${delay / 1000}s... (Attempt ${retryAttempt + 1}/${MAX_RETRIES})`);
-                    setTimeout(() => updateBackend(serviceNo, lat, lng, speed, retryAttempt + 1), delay);
+                // Server-side error (5xx) — retry with backoff
+                const errData = await response.json().catch(() => ({}));
+                log(`❌ Server error: ${errData.error || 'HTTP ' + response.status}`);
+
+                if (response.status >= 500 && attempt < MAX_RETRIES) {
+                    scheduleRetry(serviceNo, lat, lng, speed, attempt);
                 } else {
-                    statusContainer.classList.remove("status-active", "pulse");
-                    statusContainer.classList.add("status-error");
-                    statusContainer.querySelector(".status-text").innerHTML = "Network Error 🔴";
+                    queueOffline(payload);
+                }
+
+            } catch (netErr) {
+                // Network failure — offline or signal drop
+                log(`📵 Network error (attempt ${attempt + 1}): ${netErr.message}`);
+                setStatus(`No Signal 🔴 <br><small>Retrying...</small>`, false);
+                statusContainer.classList.add("status-error");
+
+                if (attempt < MAX_RETRIES) {
+                    scheduleRetry(serviceNo, lat, lng, speed, attempt);
+                } else {
+                    log("📦 Max retries reached — queuing update.");
+                    queueOffline(payload);
                 }
             }
         }
+
+        function scheduleRetry(serviceNo, lat, lng, speed, attempt) {
+            const delay = Math.min(Math.pow(2, attempt) * 1000, 30000); // cap at 30s
+            log(`⏳ Retrying in ${delay / 1000}s... (${attempt + 1}/${MAX_RETRIES})`);
+            setTimeout(() => updateBackend(serviceNo, lat, lng, speed, attempt + 1), delay);
+        }
+
+        // ─── Offline Queue ─────────────────────────────────────────
+        function queueOffline(payload) {
+            if (offlineQueue.length < 20) {   // cap to avoid memory bloat
+                offlineQueue.push(payload);
+                log(`📦 Queued (${offlineQueue.length} pending)`);
+            }
+        }
+
+        async function flushOfflineQueue() {
+            if (flushPending || offlineQueue.length === 0) return;
+            flushPending = true;
+            log(`📤 Flushing ${offlineQueue.length} queued update(s)...`);
+
+            while (offlineQueue.length > 0) {
+                const item = offlineQueue[0];
+                try {
+                    const r = await fetch('/api/update_location', {
+                        method:    'POST',
+                        headers:   { 'Content-Type': 'application/json' },
+                        body:      JSON.stringify(item),
+                        keepalive: true
+                    });
+                    if (r.ok) {
+                        offlineQueue.shift();
+                        log("✅ Flushed queued update.");
+                    } else {
+                        break;   // server still unhappy, stop flushing
+                    }
+                } catch {
+                    break;       // still offline
+                }
+            }
+            flushPending = false;
+        }
+
+        // Flush queue automatically when connectivity is restored
+        window.addEventListener("online", () => {
+            log("🌐 Network connection restored — flushing offline queue...");
+            flushOfflineQueue();
+        });
+
+        // ─────────────────────────────────────────────
+        // LOGOUT
+        // ─────────────────────────────────────────────
         async function logout() {
+            stopTracking();
             try {
                 await fetch("/api/driver/logout", { method: "POST" });
                 window.location.reload();

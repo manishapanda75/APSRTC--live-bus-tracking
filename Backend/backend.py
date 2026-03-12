@@ -3,6 +3,7 @@ from flask import Flask, jsonify, request, render_template, session, redirect, u
 from flask_cors import CORS
 from flask_caching import Cache
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix   # Azure reverse-proxy support
 import sqlite3
 import time
 import threading
@@ -16,8 +17,11 @@ from flask_limiter.util import get_remote_address
 load_dotenv()
 
 app = Flask(__name__)
-# Security Headers (Force HTTPS in production, tweak for dev)
-Talisman(app, content_security_policy=None, force_https=False)  # Set force_https=True in prod
+# Trust Azure's reverse proxy so request.is_secure and HTTPS cookies work correctly
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+# Security Headers — force_https must be False here because TLS is terminated at Azure's
+# load balancer; the app itself receives plain HTTP internally.
+Talisman(app, content_security_policy=None, force_https=False)
 # Rate Limiting
 limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day", "50 per hour"])
 # Caching Configuration
@@ -31,7 +35,9 @@ app.secret_key = os.getenv("SECRET_KEY", "fallback_dev_key")
 # Session Configuration
 from datetime import timedelta
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Sessions last 7 days
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+# Azure terminates TLS at the load balancer and sets X-Forwarded-Proto.
+# With ProxyFix above, Flask sees the request as HTTPS, so Secure cookies work.
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV', 'development') == 'production'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
@@ -649,4 +655,7 @@ def dashboard():
 # -----------------------------
 if __name__ == "__main__":
     # threading.Thread(target=simulate_live, daemon=True).start()  # Disabled for manual driver updates
-    app.run(port=5000, debug=True)
+    # Azure App Service dynamically assigns PORT via environment variable
+    port = int(os.getenv('PORT', 5000))
+    debug = os.getenv('FLASK_ENV', 'development') != 'production'
+    app.run(host='0.0.0.0', port=port, debug=debug)
