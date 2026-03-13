@@ -11,11 +11,65 @@ document.addEventListener("DOMContentLoaded", () => {
     initRoutesView();
     loadStationsForAutocomplete();
 
+    setHumanGreeting();
+
     // Version Indicator
     const brand = document.querySelector('.navbar-brand');
-    if (brand) brand.innerHTML += ' <span style="font-size:0.6em; color:#ddd;">v5.0</span>';
-    console.log("APP VERSION: 5.0 ROAD-NETWORK ROUTING LOADED");
+    if (brand) brand.innerHTML += ' <span style="font-size:0.5em; opacity: 0.5; margin-left: 8px;">v6.0</span>';
+    console.log("APP VERSION: 6.0 PROFESSIONAL UI LOADED");
 });
+
+// Toast System
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `custom-toast ${type}`;
+    
+    let icon = 'bi-check-circle-fill';
+    if (type === 'error') icon = 'bi-exclamation-triangle-fill';
+    if (type === 'warning') icon = 'bi-info-circle-fill';
+
+    toast.innerHTML = `
+        <i class="bi ${icon} toast-icon"></i>
+        <span class="toast-message">${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        toast.style.animation = 'fadeOutRight 0.3s forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+// Dynamic Human Greeting
+function setHumanGreeting() {
+    const header = document.getElementById("greetingHeader");
+    if (!header) return;
+    const hour = new Date().getHours();
+    let greeting = "Good Evening!";
+    if (hour < 12) greeting = "Good Morning!";
+    else if (hour < 17) greeting = "Good Afternoon!";
+    header.innerText = greeting;
+}
+
+// Skeleton Generator
+function getSkeletonHTML(count = 1) {
+    let html = '';
+    for(let i=0; i<count; i++) {
+        html += `
+            <div class="skeleton-card">
+                <div class="skeleton skeleton-title"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text-short"></div>
+            </div>
+        `;
+    }
+    return html;
+}
 
 
 // ---------------------------
@@ -35,14 +89,14 @@ function initServiceVehicleSearch() {
         const type = activeOption.getAttribute("data-type");
 
         if (!searchInput) {
-            resultBox.innerHTML = '<div class="alert alert-warning">Please enter a number</div>';
+            showToast("Please enter a service or vehicle number", "warning");
             return;
         }
 
         // Clear previous interval if any
         if (trackingInterval) clearInterval(trackingInterval);
 
-        resultBox.innerHTML = "⏳ Searching...";
+        resultBox.innerHTML = getSkeletonHTML(1);
 
         try {
             let url = "";
@@ -56,7 +110,8 @@ function initServiceVehicleSearch() {
             const response = await fetch(url);
 
             if (!response.ok) {
-                resultBox.innerHTML = '<div class="alert alert-danger">❌ Not found in database</div>';
+                resultBox.innerHTML = '';
+                showToast("Not found in database", "error");
                 return;
             }
 
@@ -140,7 +195,8 @@ function initServiceVehicleSearch() {
 
         } catch (error) {
             console.error(error);
-            resultBox.innerHTML = '<div class="alert alert-danger">❌ Backend Connection Failed</div>';
+            resultBox.innerHTML = '';
+            showToast("Backend Connection Failed", "error");
         }
     });
 }
@@ -431,7 +487,7 @@ function initTicketSearch() {
         const service = document.getElementById("ticketService").value;
 
         const resultBox = document.getElementById("ticketResult");
-        resultBox.innerHTML = "<div class='text-center p-3 text-muted'><i class='bi bi-hourglass-split spinning'></i> Searching available buses...</div>";
+        resultBox.innerHTML = getSkeletonHTML(3);
 
         try {
             let url = `${API_BASE}/api/search?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
@@ -441,10 +497,26 @@ function initTicketSearch() {
             }
 
             const response = await fetch(url);
+            
+            if (!response.ok) {
+                resultBox.innerHTML = '';
+                showToast("Failed to fetch tickets", "error");
+                return;
+            }
+            
             const data = await response.json();
 
             if (!Array.isArray(data) || data.length === 0) {
-                resultBox.innerHTML = '<div class="alert alert-warning text-center">❌ No buses found on this route</div>';
+                resultBox.innerHTML = '';
+                showToast("No buses found", "warning");
+                // Beautiful empty state for no tickets
+                resultBox.innerHTML = `
+                    <div class="text-center p-5 bg-white rounded-3 shadow-sm border border-light mt-3 fade-in">
+                        <i class="bi bi-compass text-muted" style="font-size: 3.5rem; opacity: 0.3;"></i>
+                        <h6 class="mt-3 text-dark fw-bold">No buses found</h6>
+                        <p class="text-muted small">Try selecting different stops or removing the service filter.</p>
+                    </div>
+                `;
                 return;
             }
 
@@ -474,7 +546,8 @@ function initTicketSearch() {
 
         } catch (error) {
             console.error(error);
-            resultBox.innerHTML = '<div class="alert alert-danger">❌ Backend Error</div>';
+            resultBox.innerHTML = '';
+            showToast("Backend Connection Error", "error");
         }
     });
 }
@@ -493,15 +566,23 @@ function initTimetableSearch() {
         const to = document.getElementById("timetableTo").value.trim();
 
         const resultBox = document.getElementById("timetableResult");
-        resultBox.innerHTML = "⏳ Fetching timetable...";
+        resultBox.innerHTML = getSkeletonHTML(2);
 
         try {
             const url = `${API_BASE}/api/timetable?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
             const response = await fetch(url);
+            
+            if (!response.ok) {
+                resultBox.innerHTML = '';
+                showToast("Failed to fetch timetable", "error");
+                return;
+            }
+            
             const data = await response.json();
 
             if (!Array.isArray(data) || data.length === 0) {
-                resultBox.innerHTML = '<div class="alert alert-warning">❌ No timetable found</div>';
+                resultBox.innerHTML = '';
+                showToast("No timetable found for this route", "warning");
                 return;
             }
 
@@ -527,7 +608,8 @@ function initTimetableSearch() {
 
         } catch (error) {
             console.error(error);
-            resultBox.innerHTML = '<div class="alert alert-danger">❌ Backend Error</div>';
+            resultBox.innerHTML = '';
+            showToast("Backend Connection Error", "error");
         }
     });
 }
@@ -547,16 +629,24 @@ function initRoutesView() {
             return;
         }
 
-        routesResult.innerHTML = "⏳ Loading routes...";
+        routesResult.innerHTML = getSkeletonHTML(3);
         routesResult.style.display = "block";
-        viewRoutesBtn.textContent = "Hide Routes";
+        viewRoutesBtn.innerHTML = "<i class='bi bi-eye-slash'></i> Hide Routes";
 
         try {
             const response = await fetch(`${API_BASE}/api/routes`);
+            
+            if (!response.ok) {
+                routesResult.innerHTML = '';
+                showToast("Failed to load routes", "error");
+                return;
+            }
+            
             const data = await response.json();
 
             if (!Array.isArray(data) || data.length === 0) {
-                routesResult.innerHTML = '<div class="alert alert-warning">❌ No routes found</div>';
+                routesResult.innerHTML = '';
+                showToast("No routes found", "warning");
                 return;
             }
 
@@ -577,7 +667,8 @@ function initRoutesView() {
 
         } catch (error) {
             console.error(error);
-            routesResult.innerHTML = '<div class="alert alert-danger">❌ Error fetching routes</div>';
+            routesResult.innerHTML = '';
+            showToast("Error fetching routes", "error");
         }
     });
 }

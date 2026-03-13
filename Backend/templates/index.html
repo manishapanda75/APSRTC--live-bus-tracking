@@ -37,42 +37,44 @@
             </a>
             <div class="d-flex align-items-center gap-3">
                 <a href="/driver/login"
-                    class="btn btn-outline-light btn-sm rounded-pill px-3 border-opacity-50 text-light fw-bold">
+                    class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold">
                     <i class="bi bi-speedometer2"></i> Driver Portal
                 </a>
                 <span class="small text-muted d-none d-md-block ms-2 border-start ps-3"><i
                         class="bi bi-person-circle text-primary"></i> {{
                     username }}</span>
-                <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="logout()">
+                <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="logout()">
                     <i class="bi bi-box-arrow-right"></i> Logout
                 </button>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4 mb-5" style="max-width: 600px;">
+    <div class="container main-content-wrapper mt-4 mb-5 pb-5" style="max-width: 600px;">
 
-        <!-- TABS -->
-        <ul class="nav nav-pills nav-fill mb-4 bg-white p-2 rounded-pill shadow-sm">
+        <!-- HUMAN GREETING -->
+        <div class="mb-4 fade-in">
+            <h4 class="fw-bold mb-1" id="greetingHeader" style="color: var(--primary-color);">Good Morning!</h4>
+            <p class="text-muted small">Where are we going today?</p>
+        </div>
+
+        <!-- Sticky Bottom Mobile Navigation -->
+        <ul class="nav nav-pills nav-fill mobile-bottom-nav d-flex d-md-none">
             <li class="nav-item">
-                <a class="nav-link active rounded-pill" onclick="switchTab('search', this)" href="#"><i
-                        class="bi bi-search"></i> Search</a>
+                <a class="nav-link active" onclick="scrollToSection('section-search', this)"><i class="bi bi-ticket-perforated"></i> Tickets</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link rounded-pill" onclick="switchTab('routes', this)" href="#"><i class="bi bi-map"></i>
-                    Routes</a>
+                <a class="nav-link" onclick="scrollToSection('section-track', this)"><i class="bi bi-broadcast"></i> Track</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link rounded-pill" onclick="switchTab('track', this)" href="#"><i
-                        class="bi bi-geo-alt"></i> Track</a>
+                <a class="nav-link" onclick="scrollToSection('section-routes', this)"><i class="bi bi-map"></i> Routes</a>
             </li>
         </ul>
 
         <!-- TAB CONTENT: SEARCH -->
-        <div id="tab-search" class="fade-in">
+        <div id="section-search" class="mb-5">
+            <h5 class="fw-bold mb-3" style="color: var(--primary-color);"><i class="bi bi-ticket-perforated"></i> Find Bus</h5>
             <div class="card-box">
-                <h5 class="card-title"><i class="bi bi-ticket-perforated"></i> Find Bus</h5>
-
                 <form id="ticketForm">
                     <datalist id="stationList"></datalist>
 
@@ -103,31 +105,16 @@
                         <i class="bi bi-search"></i> Search Buses
                     </button>
                 </form>
+                
+                <div id="ticketResult" class="mt-4"></div>
             </div>
 
-            <!-- SEARCH RESULTS -->
-            <div id="ticketResult"></div>
-        </div>
-
-        <!-- TAB CONTENT: ROUTES -->
-        <div id="tab-routes" class="fade-in" style="display: none;">
-            <div class="card-box text-center">
-                <h5 class="card-title justify-content-center"><i class="bi bi-shuffle"></i> Explore Routes</h5>
-                <p class="text-muted small mb-4">View all active routes and active buses currently running in the city.
-                </p>
-
-                <button id="viewRoutesBtn" class="btn btn-outline-primary rounded-pill px-4">
-                    <i class="bi bi-cloud-download"></i> Load All Routes
-                </button>
-
-                <div id="routesResult" class="mt-4 text-start"></div>
-            </div>
         </div>
 
         <!-- TAB CONTENT: TRACKING -->
-        <div id="tab-track" class="fade-in" style="display: none;">
+        <div id="section-track" class="mb-5">
+            <h5 class="fw-bold mb-3" style="color: var(--primary-color);"><i class="bi bi-broadcast"></i> Live Tracking</h5>
             <div class="card-box">
-                <h5 class="card-title"><i class="bi bi-broadcast"></i> Live Tracking</h5>
 
                 <div class="text-center mb-4">
                     <div class="toggle-container">
@@ -167,29 +154,34 @@
             </div>
         </div>
 
+        <!-- SECTION CONTENT: ROUTES -->
+        <div id="section-routes" class="mb-5 fade-in">
+            <h5 class="fw-bold mb-3" style="color: var(--primary-color);"><i class="bi bi-shuffle"></i> Explore Routes</h5>
+            <div class="card-box text-center">
+                <p class="text-muted small mb-4">View all active routes and active buses currently running in the city.
+                </p>
+
+                <button id="viewRoutesBtn" class="btn btn-outline-primary rounded-pill px-4">
+                    <i class="bi bi-cloud-download"></i> Load All Routes
+                </button>
+
+                <div id="routesResult" class="mt-4 text-start"></div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- TAB SWITCHING LOGIC -->
     <script>
-        function switchTab(tabName, clickedLink) {
-            // Stop live tracking if switching away
-            if (typeof trackingInterval !== 'undefined' && trackingInterval) {
-                clearInterval(trackingInterval);
-            }
-
-            // Hide all tabs
-            document.getElementById('tab-search').style.display = 'none';
-            document.getElementById('tab-routes').style.display = 'none';
-            document.getElementById('tab-track').style.display = 'none';
-
-            // Deactivate all nav links
-            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-
-            // Show selected tab
-            document.getElementById('tab-' + tabName).style.display = 'block';
-
-            // Activate clicked link
+        // Smooth scroll for mobile nav
+        function scrollToSection(sectionId, clickedLink) {
+            document.querySelectorAll('.mobile-bottom-nav .nav-link').forEach(el => el.classList.remove('active'));
             if (clickedLink) clickedLink.classList.add('active');
+
+            const yOffset = -80; // offset for sticky navbar
+            const element = document.getElementById(sectionId);
+            const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            
+            window.scrollTo({top: y, behavior: 'smooth'});
         }
 
         // Search Type Toggle
@@ -207,7 +199,11 @@
     </script>
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="/static/main_bundle.js?v=5.0"></script>
+
+    <!-- Global Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+    
+    <script src="/static/main_bundle.js?v=6.0"></script>
 </body>
 
 </html>
