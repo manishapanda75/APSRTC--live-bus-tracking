@@ -229,6 +229,7 @@ async function startLiveMap(serviceNo) {
         trackingMap.remove();
         trackingMap = null;
     }
+    trackingMarker = null; // CRITICAL: reset so marker is re-added to the NEW map
 
     // Default center (Vizag) before we get data
     trackingMap = L.map('map').setView([17.6868, 83.2185], 13);
