@@ -538,3 +538,189 @@ body {
 .bus-tracker-icon img {
     width: 28px;
 }
+
+/* =============================================
+   🚏 BUS STOP LOCATOR SECTION
+   ============================================= */
+
+/* Stops Map */
+#stopsMap {
+    border-radius: 0;
+    z-index: 1;
+}
+
+/* Filter bar sits above the map */
+.stops-filter-bar {
+    padding: 20px 24px;
+}
+
+/* Stop list scrollable container */
+.stop-list-container {
+    max-height: 320px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) #f0f2f5;
+}
+
+.stop-list-container::-webkit-scrollbar {
+    width: 5px;
+}
+.stop-list-container::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 10px;
+}
+
+/* Individual stop row */
+.stop-list-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.stop-list-item:hover {
+    background: #eaf7ef;
+    border-color: var(--primary-color);
+    transform: translateX(4px);
+}
+
+.stop-list-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Color dot showing route colour */
+.stop-route-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.stop-item-info {
+    flex: 1;
+}
+
+.stop-item-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+    margin-bottom: 2px;
+}
+
+.stop-item-route {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.stop-item-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    color: white;
+    white-space: nowrap;
+}
+
+/* Terminal stop highlight */
+.stop-list-item.terminal {
+    border-left: 4px solid var(--accent-color);
+}
+
+.stop-list-item.terminal .stop-item-name::after {
+    content: ' 🔴';
+    font-size: 0.7rem;
+}
+
+/* Locate Me button pulse while finding */
+#locateMeBtn.locating {
+    animation: locatePulse 1s ease-in-out infinite;
+}
+
+@keyframes locatePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,168,89,0.4); }
+    50%       { box-shadow: 0 0 0 10px rgba(0,168,89,0); }
+}
+
+/* Leaflet Custom Popup for Stops Map  */
+.stop-popup {
+    font-family: 'Inter', sans-serif;
+    min-width: 160px;
+}
+
+.stop-popup-name {
+    font-weight: 800;
+    font-size: 1rem;
+    color: #1a202c;
+    margin-bottom: 4px;
+}
+
+.stop-popup-route {
+    font-size: 0.8rem;
+    color: #718096;
+    margin-bottom: 6px;
+}
+
+.stop-popup-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+}
+
+/* Route colour legend */
+.route-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 0;
+    padding: 0;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* User location marker pulsing ring */
+.user-location-marker {
+    background: #1a73e8;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 0 6px rgba(26,115,232,0.25);
+    animation: userPulse 2s ease-in-out infinite;
+}
+
+@keyframes userPulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(26,115,232,0.3); }
+    50%       { box-shadow: 0 0 0 12px rgba(26,115,232,0.05); }
+}
+
+/* spinning icon utility */
+.spinning {
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}

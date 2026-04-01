@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initTimetableSearch();
     initRoutesView();
     loadStationsForAutocomplete();
+    initStopsMap();            // ← NEW: Bus Stop Locator
 
     setHumanGreeting();
 
@@ -696,3 +697,319 @@ async function loadStationsForAutocomplete() {
         console.error("Failed to load stations for autocomplete", error);
     }
 }
+
+
+// =============================================
+// 🚏 BUS STOP LOCATOR — Visakhapatnam Map
+// =============================================
+
+// Colour palette for each route — easy to extend
+const ROUTE_COLORS = {
+    '28A':  '#1a73e8',   // Google Blue
+    '6K':   '#e8300a',   // Red
+    '400K': '#8e24aa',   // Purple
+};
+
+// Service metadata (labels for the popup / list)
+const ROUTE_META = {
+    '28A':  { label: '28A', route: 'Gajuwaka → Beach Road' },
+    '6K':   { label: '6K',  route: 'Maddilapalem → Simhachalam' },
+    '400K': { label: '400K', route: 'RTC Complex → Railway Stn' },
+};
+
+let stopsMap = null;
+let stopsLayerGroups = {};   // { '28A': L.layerGroup, '6K': ..., ... }
+let userLocationMarker = null;
+
+/**
+ * Build a coloured circular marker icon (no external image needed)
+ */
+function makeStopIcon(color, isTerminal) {
+    const size    = isTerminal ? 18 : 13;
+    const border  = isTerminal ? 3  : 2;
+    return L.divIcon({
+        className: '',
+        html: `<div style="
+            width:${size}px; height:${size}px;
+            background:${color};
+            border:${border}px solid white;
+            border-radius:50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+        "></div>`,
+        iconAnchor: [size / 2, size / 2],
+        popupAnchor: [0, -(size / 2 + 4)]
+    });
+}
+
+/**
+ * Initialise the Vizag stops map and load all route stops.
+ */
+async function initStopsMap() {
+    const mapEl = document.getElementById('stopsMap');
+    if (!mapEl) return;
+
+    // Centre on Visakhapatnam city centre
+    stopsMap = L.map('stopsMap', { zoomControl: true }).setView([17.6868, 83.2185], 13);
+
+    // Use CartoDB Light (clean, readable — perfect for a transit app)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap contributors',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(stopsMap);
+
+    // Load stops for all known services
+    const services = Object.keys(ROUTE_META);
+    for (const svc of services) {
+        await loadStopsLayer(svc);
+    }
+
+    // Show all routes initially
+    renderStopListAll();
+
+    // Wire up route filter dropdown
+    const filterEl = document.getElementById('stopsRouteFilter');
+    if (filterEl) {
+        filterEl.addEventListener('change', () => {
+            const selected = filterEl.value;
+            applyRouteFilter(selected);
+        });
+    }
+}
+
+/**
+ * Fetch stop data for one service and build its layer group.
+ */
+async function loadStopsLayer(serviceNo) {
+    try {
+        const res = await fetch(`${API_BASE}/api/route_details/${serviceNo}`);
+        if (!res.ok) return;
+
+        const stops = await res.json();
+        if (!stops || stops.length === 0) return;
+
+        const color = ROUTE_COLORS[serviceNo] || '#00A859';
+        const meta  = ROUTE_META[serviceNo]  || { label: serviceNo, route: '' };
+
+        const markers = [];
+        stops.forEach((stop, idx) => {
+            const isTerminal = (idx === 0 || idx === stops.length - 1);
+            const icon = makeStopIcon(color, isTerminal);
+
+            const popupHTML = `
+                <div class="stop-popup">
+                    <div class="stop-popup-name">🚏 ${stop.name}</div>
+                    <div class="stop-popup-route">${meta.route}</div>
+                    <span class="stop-popup-badge" style="background:${color};">${meta.label}</span>
+                    ${isTerminal ? ' <span class="stop-popup-badge" style="background:#FF5E00; margin-left:4px;">Terminal</span>' : ''}
+                </div>
+            `;
+
+            const marker = L.marker([stop.lat, stop.lng], { icon })
+                .bindPopup(popupHTML, { maxWidth: 220 });
+
+            markers.push({ marker, stop, isTerminal });
+        });
+
+        // Build a polyline connecting stops in order
+        const latlngs = stops.map(s => [s.lat, s.lng]);
+        const polyline = L.polyline(latlngs, {
+            color,
+            weight: 3,
+            opacity: 0.7,
+            dashArray: '6, 4'
+        });
+
+        // Group all elements for this service
+        const group = L.layerGroup();
+        group.addLayer(polyline);
+        markers.forEach(({ marker }) => group.addLayer(marker));
+
+        stopsLayerGroups[serviceNo] = {
+            group,
+            markers,
+            stops,
+            color,
+            meta
+        };
+
+        group.addTo(stopsMap);
+
+    } catch (err) {
+        console.error(`Failed to load stops for ${serviceNo}:`, err);
+    }
+}
+
+/**
+ * Show / hide route layers according to the filter dropdown.
+ */
+function applyRouteFilter(selected) {
+    Object.entries(stopsLayerGroups).forEach(([svc, data]) => {
+        if (selected === 'all' || selected === svc) {
+            stopsMap.addLayer(data.group);
+        } else {
+            stopsMap.removeLayer(data.group);
+        }
+    });
+
+    if (selected === 'all') {
+        renderStopListAll();
+        stopsMap.setView([17.6868, 83.2185], 13);
+    } else {
+        renderStopListSingle(selected);
+        // Fit map to that route's stops
+        const data = stopsLayerGroups[selected];
+        if (data && data.stops.length > 0) {
+            const latlngs = data.stops.map(s => [s.lat, s.lng]);
+            stopsMap.fitBounds(latlngs, { padding: [40, 40] });
+        }
+    }
+}
+
+/**
+ * Render the stop list for ALL routes.
+ */
+function renderStopListAll() {
+    const panel = document.getElementById('stopListPanel');
+    if (!panel) return;
+
+    let html = '';
+    Object.entries(stopsLayerGroups).forEach(([svc, data]) => {
+        // Small route header
+        html += `
+            <div class="d-flex align-items-center gap-2 mb-2 mt-3">
+                <div class="legend-dot" style="background:${data.color};"></div>
+                <span class="fw-bold small" style="color:${data.color};">${data.meta.label} — ${data.meta.route}</span>
+            </div>
+        `;
+        data.stops.forEach((stop, idx) => {
+            const isTerminal = (idx === 0 || idx === data.stops.length - 1);
+            html += buildStopListItem(stop, svc, data.color, isTerminal, idx);
+        });
+    });
+
+    panel.innerHTML = html || '<p class="text-muted text-center small">No stops loaded</p>';
+}
+
+/**
+ * Render the stop list for a single route.
+ */
+function renderStopListSingle(serviceNo) {
+    const panel = document.getElementById('stopListPanel');
+    if (!panel) return;
+
+    const data = stopsLayerGroups[serviceNo];
+    if (!data) {
+        panel.innerHTML = '<p class="text-muted text-center small">No stops found</p>';
+        return;
+    }
+
+    let html = `
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="legend-dot" style="background:${data.color};"></div>
+            <span class="fw-bold small" style="color:${data.color};">${data.meta.route}</span>
+        </div>
+    `;
+
+    data.stops.forEach((stop, idx) => {
+        const isTerminal = (idx === 0 || idx === data.stops.length - 1);
+        html += buildStopListItem(stop, serviceNo, data.color, isTerminal, idx);
+    });
+
+    panel.innerHTML = html;
+}
+
+/**
+ * Build HTML for a single stop item in the list.
+ * Clicking it pans the map to the stop and opens its popup.
+ */
+function buildStopListItem(stop, serviceNo, color, isTerminal, idx) {
+    const terminalClass = isTerminal ? 'terminal' : '';
+    const badge         = isTerminal ? 'Terminal' : `Stop ${idx + 1}`;
+    return `
+        <div class="stop-list-item ${terminalClass}"
+             onclick="panToStop('${serviceNo}', ${idx})"
+             title="Tap to locate on map">
+            <div class="stop-route-dot" style="background:${color};"></div>
+            <div class="stop-item-info">
+                <div class="stop-item-name">${stop.name}</div>
+                <div class="stop-item-route">${ROUTE_META[serviceNo]?.route || ''}</div>
+            </div>
+            <span class="stop-item-badge" style="background:${color};">${badge}</span>
+        </div>
+    `;
+}
+
+/**
+ * Pan the stops map to a specific stop and open its popup.
+ */
+window.panToStop = function(serviceNo, stopIdx) {
+    const data = stopsLayerGroups[serviceNo];
+    if (!data) return;
+
+    const stop = data.stops[stopIdx];
+    if (!stop) return;
+
+    stopsMap.setView([stop.lat, stop.lng], 16, { animate: true });
+
+    // Open marker popup
+    const markerEntry = data.markers[stopIdx];
+    if (markerEntry) {
+        markerEntry.marker.openPopup();
+    }
+
+    // Scroll page so map is visible
+    document.getElementById('stopsMap').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
+
+/**
+ * Locate user using browser GPS and pan the stops map there.
+ * Shows a pulsing blue circle at user's location.
+ */
+window.locateUserOnStopsMap = function() {
+    if (!navigator.geolocation) {
+        showToast('Geolocation is not supported by your browser', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('locateMeBtn');
+    btn.classList.add('locating');
+    btn.innerHTML = '<i class="bi bi-hourglass-split spinning"></i> Locating...';
+
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            const { latitude, longitude } = pos.coords;
+
+            // Remove old marker if any
+            if (userLocationMarker) {
+                stopsMap.removeLayer(userLocationMarker);
+            }
+
+            // Custom pulsing div icon
+            const userIcon = L.divIcon({
+                className: 'user-location-marker',
+                html: '',
+                iconSize: [18, 18],
+                iconAnchor: [9, 9]
+            });
+
+            userLocationMarker = L.marker([latitude, longitude], { icon: userIcon })
+                .addTo(stopsMap)
+                .bindPopup('<b>📍 You are here</b>')
+                .openPopup();
+
+            stopsMap.setView([latitude, longitude], 15, { animate: true });
+
+            btn.classList.remove('locating');
+            btn.innerHTML = '<i class="bi bi-crosshair"></i> Locate Me';
+            showToast('Location found! 📍', 'success');
+        },
+        (err) => {
+            btn.classList.remove('locating');
+            btn.innerHTML = '<i class="bi bi-crosshair"></i> Locate Me';
+            showToast('Could not get your location', 'error');
+            console.error('Geolocation error:', err);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+};
