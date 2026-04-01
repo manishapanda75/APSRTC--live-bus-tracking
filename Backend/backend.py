@@ -34,14 +34,28 @@ app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV', 'development') == '
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
-# Setup PostgreSQL Connection
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 10,
-    'pool_recycle': 3600,
-    'pool_pre_ping': True
-}
+# Setup Database Connection
+# Render provides DATABASE_URL as 'postgres://' but SQLAlchemy needs 'postgresql://'
+_db_url = os.getenv('DATABASE_URL', '')
+if _db_url.startswith('postgres://'):
+    _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+
+# Fallback to SQLite if no DB url set (for local dev / testing)
+if not _db_url:
+    _db_url = 'sqlite:///apsrtc_local.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {}   # SQLite doesn't support pool options
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_size': 5,
+        'pool_recycle': 1800,
+        'pool_pre_ping': True,
+        'connect_args': {'connect_timeout': 10}
+    }
+
 db.init_app(app)
 
 CORS(app)
