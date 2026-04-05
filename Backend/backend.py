@@ -229,13 +229,15 @@ def timetable():
     from_station = request.args.get("from", "")
     to_station = request.args.get("to", "")
 
-    query = db.session.query(Service.service_no, TimetableEntry.arrival_time).join(TimetableEntry).join(Route).join(Stop)
+    query = db.session.query(Service.service_no, TimetableEntry.arrival_time).join(TimetableEntry).join(Route).join(Stop, TimetableEntry.stop_id == Stop.stop_id)
     
     condition = or_(
         and_(Route.from_station.ilike(f"%{from_station}%"), Route.to_station.ilike(f"%{to_station}%")),
         and_(Route.from_station.ilike(f"%{to_station}%"), Route.to_station.ilike(f"%{from_station}%"))
     )
     query = query.filter(condition)
+    query = query.filter(Stop.stop_name.ilike(f"%{from_station}%"))
+    query = query.order_by(TimetableEntry.arrival_time.asc())
 
     results = []
     for service_no, arrival_time in query.all():
