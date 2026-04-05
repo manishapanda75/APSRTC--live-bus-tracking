@@ -13,7 +13,6 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from sqlalchemy import or_, and_
 from sqlalchemy.exc import IntegrityError
-from flask_socketio import SocketIO, emit, join_room, leave_room
 from models import db, Route, Service, Vehicle, Stop, TimetableEntry, Driver, User, LiveLocation
 
 load_dotenv()
@@ -60,32 +59,6 @@ db.init_app(app)
 
 CORS(app)
 
-# ─── Flask-SocketIO Setup ──────────────────────────────
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent', logger=False, engineio_logger=False)
-
-@socketio.on('connect')
-def handle_connect():
-    print(f"[WS] Client connected: {request.sid}", flush=True)
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    print(f"[WS] Client disconnected: {request.sid}", flush=True)
-
-@socketio.on('join_tracking')
-def handle_join_tracking(data):
-    service_no = data.get('service_no', '')
-    if service_no:
-        join_room(f"track_{service_no}")
-        print(f"[WS] {request.sid} joined room track_{service_no}", flush=True)
-
-@socketio.on('leave_tracking')
-def handle_leave_tracking(data):
-    service_no = data.get('service_no', '')
-    if service_no:
-        leave_room(f"track_{service_no}")
-        print(f"[WS] {request.sid} left room track_{service_no}", flush=True)
-
-
 # ─── Haversine Distance Helper ─────────────────────────
 def haversine(lat1, lon1, lat2, lon2):
     """Calculate distance in km between two lat/lng points."""
@@ -96,6 +69,26 @@ def haversine(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
+
+@app.route("/api/admin/force_seed")
+def force_seed():
+    from werkzeug.security import generate_password_hash
+    import init_db
+    
+    # 1. Force extreme DB drop and initialization to fix SQLite corruption
+    db.drop_all()
+    init_db.initialize_db()
+
+    # 2. Flush any hanging drivers and forcibly insert our 3 specific ones
+    db.session.query(Driver).delete()
+    db.session.commit()
+    
+    d1 = Driver(username='driver_28a', password=generate_password_hash('pass28a'))
+    d2 = Driver(username='driver_6k', password=generate_password_hash('pass6k'))
+    d3 = Driver(username='driver_400k', password=generate_password_hash('pass400k'))
+    db.session.add_all([d1, d2, d3])
+    db.session.commit()
+    return "Database forcefully completely wiped, re-initialized and powerfully re-seeded with exactly 3 Drivers!"
 
 # ─── Admin Auth Helpers ─────────────────────────────────
 def is_admin():
@@ -411,30 +404,6 @@ def user_logout():
 # DRIVER AUTH (with service linking)
 # ═══════════════════════════════════════════════════════
 
-@app.route("/api/driver/register", methods=["POST"])
-@limiter.limit("3 per hour")
-def driver_register():
-    data = request.json
-    username = data.get("username")
-    password = data.get("password")
-
-    if not username or not password:
-        return jsonify({"error": "Missing username or password"}), 400
-
-    hashed_pw = generate_password_hash(password)
-
-    try:
-        driver = Driver(username=username, password=hashed_pw)
-        db.session.add(driver)
-        db.session.commit()
-        return jsonify({"message": "Registration successful! Please login."})
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({"error": "Username already exists"}), 409
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
-
 @app.route("/api/driver/login", methods=["POST"])
 @limiter.limit("5 per minute")
 def driver_login():
@@ -561,16 +530,6 @@ def update_location():
         log_entry = f"{time.strftime('%H:%M:%S')}: [OK] Updated DB for vehicle {v.vehicle_id}"
         print(log_entry, flush=True)
         DEBUG_LOGS.append(log_entry)
-
-        # ── WebSocket Broadcast ─────────────────
-        live_data = {
-            "service_no": service_no,
-            "lat": lat,
-            "lng": lng,
-            "speed": speed,
-            "updated_at": timestamp
-        }
-        socketio.emit('location_update', live_data, room=f"track_{service_no}")
 
         return jsonify({"message": "Location updated", "time": timestamp, "vehicle_id": v.vehicle_id})
 
@@ -842,4 +801,4 @@ def create_admin_user():
 if __name__ == "__main__":
     port = int(os.getenv('PORT', 5000))
     debug = os.getenv('FLASK_ENV', 'development') != 'production'
-    socketio.run(app, host='0.0.0.0', port=port, debug=debug)
+    app.run(host='0.0.0.0', port=port, debug=debug)
