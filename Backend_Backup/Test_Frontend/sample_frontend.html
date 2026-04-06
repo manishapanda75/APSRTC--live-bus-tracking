@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>APSRTC Bus System</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 40px;
+        }
+        .box {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            width: 450px;
+        }
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h1>APSRTC Bus Backend Test</h1>
+
+<!-- ================= FROM → TO SEARCH ================= -->
+
+<div class="box">
+    <h3>Search Buses (From → To)</h3>
+
+    From:
+    <input type="text" id="fromStation" value="Gajuwaka"><br><br>
+
+    To:
+    <input type="text" id="toStation" value="Beach Road"><br><br>
+
+    Service Type:
+    <select id="serviceType">
+        <option value="">Any</option>
+        <option value="Express">Express</option>
+        <option value="Metro">Metro</option>
+    </select><br><br>
+
+    <button onclick="searchBuses()">Search Buses</button>
+</div>
+
+<!-- ================= SERVICE NUMBER SEARCH ================= -->
+
+<div class="box">
+    <h3>Search By Service Number</h3>
+
+    Service No:
+    <input type="text" id="serviceNo" placeholder="e.g. 28A"><br><br>
+
+    <button onclick="searchService()">Search Service</button>
+</div>
+
+<!-- ================= VEHICLE NUMBER SEARCH ================= -->
+
+<div class="box">
+    <h3>Search By Vehicle Number</h3>
+
+    Vehicle No:
+    <input type="text" id="vehicleNo" placeholder="e.g. AP31 AB 1234"><br><br>
+
+    <button onclick="searchVehicle()">Search Vehicle</button>
+</div>
+
+<!-- ================= TIMETABLE SEARCH ================= -->
+
+<div class="box">
+    <h3>Bus Timetable Search (By From Station)</h3>
+
+    From Station:
+    <input type="text" id="timeFromStation" placeholder="e.g. Gajuwaka"><br><br>
+
+    <button onclick="searchTimetable()">Search Timetable</button>
+</div>
+
+<hr>
+
+<h2>Results</h2>
+<div id="results"></div>
+
+<script>
+// ---------------- FROM → TO SEARCH ----------------
+async function searchBuses() {
+
+    const from = document.getElementById("fromStation").value;
+    const to = document.getElementById("toStation").value;
+    const type = document.getElementById("serviceType").value;
+
+    const url = `http://127.0.0.1:5000/api/search?from=${from}&to=${to}&type=${type}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        showResults(data);
+
+    } catch (error) {
+        alert("Backend not reachable!");
+        console.error(error);
+    }
+}
+
+// ---------------- SERVICE NUMBER SEARCH ----------------
+async function searchService() {
+
+    const serviceNo = document.getElementById("serviceNo").value;
+    const url = `http://127.0.0.1:5000/api/service/${serviceNo}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        let resultDiv = document.getElementById("results");
+        resultDiv.innerHTML = "";
+
+        if (data.error) {
+            resultDiv.innerHTML = "<p>Service not found</p>";
+            return;
+        }
+
+        resultDiv.innerHTML = `
+            <div style="border:1px solid #ccc; padding:10px;">
+                <b>Service No:</b> ${data.service_no}<br>
+                <b>Route:</b> ${data.route}
+            </div>
+        `;
+
+    } catch (error) {
+        alert("Backend not reachable!");
+        console.error(error);
+    }
+}
+
+// ---------------- VEHICLE NUMBER SEARCH ----------------
+async function searchVehicle() {
+
+    const vehicleNo = document.getElementById("vehicleNo").value;
+    const url = `http://127.0.0.1:5000/api/vehicle/${vehicleNo}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        let resultDiv = document.getElementById("results");
+        resultDiv.innerHTML = "";
+
+        if (data.error) {
+            resultDiv.innerHTML = "<p>Vehicle not found</p>";
+            return;
+        }
+
+        resultDiv.innerHTML = `
+            <div style="border:1px solid #ccc; padding:10px;">
+                <b>Vehicle No:</b> ${data.vehicle_no}<br>
+                <b>Service No:</b> ${data.service_no}<br>
+                <b>Route:</b> ${data.route}<br>
+                <b>Status:</b> ${data.status}
+            </div>
+        `;
+
+    } catch (error) {
+        alert("Backend not reachable!");
+        console.error(error);
+    }
+}
+
+// ---------------- TIMETABLE SEARCH ----------------
+async function searchTimetable() {
+
+    const from = document.getElementById("timeFromStation").value;
+    const url = `http://127.0.0.1:5000/api/timetable?from=${from}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        let resultDiv = document.getElementById("results");
+        resultDiv.innerHTML = "";
+
+        if (data.length === 0) {
+            resultDiv.innerHTML = "<p>No timetable found for this station</p>";
+            return;
+        }
+
+        data.forEach(item => {
+            let row = `
+                <div style="border:1px solid #ccc; padding:10px; margin:10px;">
+                    <b>Service No:</b> ${item.service_no}<br>
+                    <b>Arrival Time:</b> ${item.arrival_time}
+                </div>
+            `;
+            resultDiv.innerHTML += row;
+        });
+
+    } catch (error) {
+        alert("Backend not reachable!");
+        console.error(error);
+    }
+}
+
+// ---------------- SHOW MULTIPLE BUS RESULTS ----------------
+function showResults(buses) {
+
+    let resultDiv = document.getElementById("results");
+    resultDiv.innerHTML = "";
+
+    if (buses.length === 0) {
+        resultDiv.innerHTML = "<p>No buses found</p>";
+        return;
+    }
+
+    buses.forEach(bus => {
+        let row = `
+            <div style="border:1px solid #ccc; padding:10px; margin:10px;">
+                <b>Service No:</b> ${bus.service_no}<br>
+                <b>Route:</b> ${bus.route_name}<br>
+                <b>Type:</b> ${bus.service_type}<br>
+                <b>Vehicle:</b> ${bus.vehicle_no}
+            </div>
+        `;
+        resultDiv.innerHTML += row;
+    });
+}
+</script>
+
+</body>
+</html>

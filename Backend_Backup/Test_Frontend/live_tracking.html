@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Bus Tracking</title>
+</head>
+<body>
+
+<h2>Live Bus Tracking</h2>
+
+Service No:
+<input type="text" id="liveService" value="28A">
+<button onclick="getLive()">Get Live Location</button>
+<button onclick="getETA()">Get ETA</button>
+
+<hr>
+<div id="output"></div>
+
+<script>
+async function getLive() {
+    const service = document.getElementById("liveService").value;
+    const url = `http://127.0.0.1:5000/api/live/${service}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.error) {
+        document.getElementById("output").innerText = "Live data not found";
+        return;
+    }
+
+    document.getElementById("output").innerHTML = `
+        <b>Latitude:</b> ${data.lat}<br>
+        <b>Longitude:</b> ${data.lng}<br>
+        <b>Speed:</b> ${data.speed} km/h<br>
+        <b>Last Updated:</b> ${data.updated_at}
+    `;
+}
+
+async function getETA() {
+    const service = document.getElementById("liveService").value;
+    const url = `http://127.0.0.1:5000/api/eta/${service}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.error) {
+        document.getElementById("output").innerText = "ETA not available";
+        return;
+    }
+
+    document.getElementById("output").innerHTML = `
+        <b>Service:</b> ${data.service_no}<br>
+        <b>Remaining Distance:</b> ${data.remaining_distance_km} km<br>
+        <b>Speed:</b> ${data.speed_kmph} km/h<br>
+        <b><u>Estimated Arrival Time:</u></b> ${data.eta_minutes} minutes
+    `;
+}
+</script>
+
+</body>
+</html>

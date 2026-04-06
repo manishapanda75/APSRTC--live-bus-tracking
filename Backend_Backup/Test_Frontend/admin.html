@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>APSRTC Admin Panel</title>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 40px;
+        }
+        .box {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            width: 400px;
+        }
+        input {
+            width: 90%;
+            padding: 6px;
+            margin: 5px 0;
+        }
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h1>APSRTC Admin Panel</h1>
+
+<!-- ================= ADD ROUTE ================= -->
+
+<div class="box">
+    <h3>Add Route</h3>
+
+    Route Name:<br>
+    <input id="rname" placeholder="Gajuwaka → Beach Road"><br>
+
+    From Station:<br>
+    <input id="rfrom" placeholder="Gajuwaka"><br>
+
+    To Station:<br>
+    <input id="rto" placeholder="Beach Road"><br><br>
+
+    <button onclick="addRoute()">Add Route</button>
+</div>
+
+<!-- ================= ADD SERVICE ================= -->
+
+<div class="box">
+    <h3>Add Service</h3>
+
+    Service No:<br>
+    <input id="sno" placeholder="28B"><br>
+
+    Route ID:<br>
+    <input id="sid" placeholder="1"><br>
+
+    Service Type:<br>
+    <input id="stype" placeholder="Express"><br><br>
+
+    <button onclick="addService()">Add Service</button>
+</div>
+
+<!-- ================= ADD VEHICLE ================= -->
+
+<div class="box">
+    <h3>Add Vehicle</h3>
+
+    Vehicle No:<br>
+    <input id="vno" placeholder="AP31 EF 9999"><br>
+
+    Service ID:<br>
+    <input id="vsid" placeholder="1"><br>
+
+    Status:<br>
+    <input id="vstatus" placeholder="Running"><br><br>
+
+    <button onclick="addVehicle()">Add Vehicle</button>
+</div>
+
+<hr>
+<h3>Output</h3>
+<div id="msg"></div>
+
+<script>
+// ---------------- ADD ROUTE ----------------
+async function addRoute() {
+    const data = {
+        route_name: document.getElementById("rname").value,
+        from: document.getElementById("rfrom").value,
+        to: document.getElementById("rto").value
+    };
+
+    const res = await fetch("http://127.0.0.1:5000/api/admin/add_route", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    });
+
+    const out = await res.json();
+    document.getElementById("msg").innerText = out.message;
+}
+
+// ---------------- ADD SERVICE ----------------
+async function addService() {
+    const data = {
+        service_no: document.getElementById("sno").value,
+        route_id: document.getElementById("sid").value,
+        service_type: document.getElementById("stype").value
+    };
+
+    const res = await fetch("http://127.0.0.1:5000/api/admin/add_service", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    });
+
+    const out = await res.json();
+    document.getElementById("msg").innerText = out.message;
+}
+
+// ---------------- ADD VEHICLE ----------------
+async function addVehicle() {
+    const data = {
+        vehicle_no: document.getElementById("vno").value,
+        service_id: document.getElementById("vsid").value,
+        status: document.getElementById("vstatus").value
+    };
+
+    const res = await fetch("http://127.0.0.1:5000/api/admin/add_vehicle", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    });
+
+    const out = await res.json();
+    document.getElementById("msg").innerText = out.message;
+}
+</script>
+
+</body>
+</html>

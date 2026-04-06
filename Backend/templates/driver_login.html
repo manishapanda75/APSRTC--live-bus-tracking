@@ -48,44 +48,14 @@
                 </div>
             </div>
             <button class="btn btn-primary w-100 btn-lg shadow-sm" onclick="handleLogin()">Login</button>
-            <div class="text-center mt-3">
-                <span class="text-primary small" style="cursor: pointer;" onclick="toggleForms()">New driver? Register
-                    here</span>
-            </div>
-        </div>
-
-        <!-- REGISTER FORM -->
-        <div id="registerForm" class="hidden">
-            <div class="mb-3">
-                <label class="form-label small fw-bold text-muted">CHOOSE USERNAME</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-person-plus"></i></span>
-                    <input type="text" id="regUser" class="form-control border-start-0" placeholder="Username">
-                </div>
-            </div>
-            <div class="mb-4">
-                <label class="form-label small fw-bold text-muted">CREATE PASSWORD</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock"></i></span>
-                    <input type="password" id="regPass" class="form-control border-start-0" placeholder="Password">
-                </div>
-            </div>
-            <button class="btn btn-success w-100 btn-lg shadow-sm" onclick="handleRegister()">Create Account</button>
-            <div class="text-center mt-3">
-                <span class="text-primary small" style="cursor: pointer;" onclick="toggleForms()">Already have an
-                    account? Login</span>
-            </div>
         </div>
 
         <div id="messageBox" class="mt-3 text-center"></div>
     </div>
 
+
     <script>
-        function toggleForms() {
-            document.getElementById("loginForm").classList.toggle("hidden");
-            document.getElementById("registerForm").classList.toggle("hidden");
-            document.getElementById("messageBox").innerHTML = "";
-        }
+
 
         async function handleLogin() {
             const user = document.getElementById("loginUser").value;
@@ -103,27 +73,6 @@
                     window.location.href = data.redirect;
                 } else {
                     showMsg(data.error || "Login failed", "danger");
-                }
-            } catch (e) { showMsg("Server Error", "danger"); }
-        }
-
-        async function handleRegister() {
-            const user = document.getElementById("regUser").value;
-            const pass = document.getElementById("regPass").value;
-            if (!user || !pass) return showMsg("Please fill all fields", "danger");
-
-            try {
-                const res = await fetch("/api/driver/register", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username: user, password: pass })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    showMsg(data.message, "success");
-                    setTimeout(toggleForms, 1500);
-                } else {
-                    showMsg(data.error || "Registration failed", "danger");
                 }
             } catch (e) { showMsg("Server Error", "danger"); }
         }

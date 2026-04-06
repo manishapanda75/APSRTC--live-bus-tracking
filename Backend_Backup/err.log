@@ -1,0 +1,73 @@
+﻿c:\Users\abhir\Documents\4-
+2-Project\Backend\.venv\Scr
+ipts\python.exe : 
+Traceback (most recent 
+call last):
+At line:1 char:1
++ c:\Users\abhir\Documents\
+4-2-Project\Backend\.venv\S
+cripts\python.exe ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (Tra  
+  ceback (most recent ca   
+ ll last)::String) [],     
+RemoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+  File "c:\Users\abhir\Docu
+ments\4-2-Project\Backend\i
+nit_db.py", line 77, in 
+<module>
+    initialize_db()
+  File "c:\Users\abhir\Docu
+ments\4-2-Project\Backend\i
+nit_db.py", line 13, in 
+initialize_db
+    app = create_app()
+          ^^^^^^^^^^^^
+  File "c:\Users\abhir\Docu
+ments\4-2-Project\Backend\i
+nit_db.py", line 9, in 
+create_app
+    db.init_app(app)
+  File "C:\Users\abhir\Docu
+ments\4-2-Project\Backend\.
+venv\Lib\site-packages\flas
+k_sqlalchemy\extension.py",
+ line 373, in init_app
+    self._apply_driver_defa
+ults(options, app)
+  File "C:\Users\abhir\Docu
+ments\4-2-Project\Backend\.
+venv\Lib\site-packages\flas
+k_sqlalchemy\extension.py",
+ line 607, in 
+_apply_driver_defaults
+    url = sa.engine.make_ur
+l(options["url"])
+          ^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
+  File "C:\Users\abhir\Docu
+ments\4-2-Project\Backend\.
+venv\Lib\site-packages\sqla
+lchemy\engine\url.py", 
+line 856, in make_url
+    return 
+_parse_url(name_or_url)
+           
+^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\abhir\Docu
+ments\4-2-Project\Backend\.
+venv\Lib\site-packages\sqla
+lchemy\engine\url.py", 
+line 922, in _parse_url
+    raise 
+exc.ArgumentError(
+sqlalchemy.exc.ArgumentErro
+r: Could not parse 
+SQLAlchemy URL from given 
+URL string

@@ -7,6 +7,3 @@ flask-limiter
 flask-caching==2.1.0
 Flask-SQLAlchemy==3.1.1
 psycopg2-binary==2.9.9
-flask-socketio==5.3.6
-gevent==23.9.1
-gevent-websocket==0.10.1

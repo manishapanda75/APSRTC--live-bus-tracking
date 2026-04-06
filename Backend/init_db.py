@@ -90,6 +90,18 @@ def initialize_db():
         else:
             print("[OK] Admin user already exists.")
 
+        # ── Seed Authorized Drivers Independently ──
+        if Driver.query.count() == 0:
+            print("[...] Seeding highly secure driver accounts...")
+            d1 = Driver(username='driver_28a', password=generate_password_hash('pass28a'))
+            d2 = Driver(username='driver_6k', password=generate_password_hash('pass6k'))
+            d3 = Driver(username='driver_400k', password=generate_password_hash('pass400k'))
+            db.session.add_all([d1, d2, d3])
+            db.session.commit()
+            print("[OK] Authorized Drivers securely seeded.")
+        else:
+            print("[OK] Drivers already seeded.")
+
 def migrate():
     """Safely create tables if they don't exist, without dropping data."""
     app = create_app()

@@ -1,1 +1,1 @@
-web: gunicorn Backend.backend:app --workers 1 --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker --timeout 120 --log-level info
+web: gunicorn backend:app --workers 4 --threads 2 --worker-class gthread --timeout 120 --preload --log-level info

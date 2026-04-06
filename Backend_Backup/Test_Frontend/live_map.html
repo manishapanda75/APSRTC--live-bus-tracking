@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Live Bus Map</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body {
+            font-family: Arial;
+            margin: 20px;
+        }
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Live Bus Tracking Map</h2>
+
+Service No:
+<input type="text" id="serviceNo" value="28A">
+<button onclick="startTracking()">Start Tracking</button>
+
+<br><br>
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+let map;
+let marker;
+let interval;
+let firstTime = true;
+
+// Initialize map
+function initMap(lat, lng) {
+    map = L.map('map').setView([lat, lng], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    marker = L.marker([lat, lng]).addTo(map)
+        .bindPopup("🚌 Live Bus")
+        .openPopup();
+}
+
+// Fetch and update live location
+async function updateLocation(service) {
+
+    const url = `http://127.0.0.1:5000/api/live/${service}`;
+
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.error) {
+            alert("Live data not found");
+            return;
+        }
+
+        const lat = data.lat;
+        const lng = data.lng;
+
+        console.log("New Location:", lat, lng); // 🔥 DEBUG
+
+        // Move marker smoothly
+        marker.setLatLng([lat, lng]);
+        map.panTo([lat, lng]);
+
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// Start tracking
+async function startTracking() {
+
+    const service = document.getElementById("serviceNo").value;
+    const url = `http://127.0.0.1:5000/api/live/${service}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.error) {
+        alert("Service not found");
+        return;
+    }
+
+    const lat = data.lat;
+    const lng = data.lng;
+
+    // Initialize map only once
+    if (firstTime) {
+        initMap(lat, lng);
+        firstTime = false;
+    }
+
+    // Clear old interval if any
+    if (interval) {
+        clearInterval(interval);
+    }
+
+    // Update every 3 seconds
+    interval = setInterval(() => {
+        updateLocation(service);
+    }, 3000);
+}
+</script>
+
+</body>
+</html>
