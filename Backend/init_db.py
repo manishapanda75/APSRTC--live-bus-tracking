@@ -33,9 +33,9 @@ def initialize_db():
             db.session.commit()
 
             # ── 2. Services ──
-            s1 = Service(service_no='111', route_id=r1.route_id, service_type='Express', ticket_price=40)
-            s2 = Service(service_no='222', route_id=r2.route_id, service_type='Metro', ticket_price=25)
-            s3 = Service(service_no='333', route_id=r3.route_id, service_type='Deluxe', ticket_price=50)
+            s1 = Service(service_no='28A', route_id=r1.route_id, service_type='Express', ticket_price=40)
+            s2 = Service(service_no='6K', route_id=r2.route_id, service_type='Metro', ticket_price=25)
+            s3 = Service(service_no='400K', route_id=r3.route_id, service_type='Deluxe', ticket_price=50)
             db.session.add_all([s1, s2, s3])
             db.session.commit()
 
@@ -97,9 +97,9 @@ def initialize_db():
         # ── Seed Authorized Drivers Independently ──
         if Driver.query.count() == 0:
             print("[...] Seeding highly secure driver accounts...")
-            d1 = Driver(username='driver_111', password=generate_password_hash('pass111'))
-            d2 = Driver(username='driver_222', password=generate_password_hash('pass222'))
-            d3 = Driver(username='driver_333', password=generate_password_hash('pass333'))
+            d1 = Driver(username='driver_28a', password=generate_password_hash('pass28a'))
+            d2 = Driver(username='driver_6k', password=generate_password_hash('pass6k'))
+            d3 = Driver(username='driver_400k', password=generate_password_hash('pass400k'))
             db.session.add_all([d1, d2, d3])
             db.session.commit()
             print("[OK] Authorized Drivers securely seeded.")

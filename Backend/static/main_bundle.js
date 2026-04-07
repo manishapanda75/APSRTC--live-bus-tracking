@@ -1020,15 +1020,15 @@ async function loadStationsForAutocomplete() {
 // ═══════════════════════════════════════════════════════
 
 const ROUTE_COLORS = {
-    '111': '#1a73e8',
-    '222': '#e8300a',
-    '333': '#8e24aa',
+    '28A': '#1a73e8',
+    '6K': '#e8300a',
+    '400K': '#8e24aa',
 };
 
 const ROUTE_META = {
-    '111': { label: '111', route: 'Anakapalle → Steel Plant' },
-    '222': { label: '222', route: 'NAD Junction → Pendurthi' },
-    '333': { label: '333', route: 'Rushikonda → Bheemili' },
+    '28A': { label: '28A', route: 'Anakapalle → Steel Plant' },
+    '6K': { label: '6K', route: 'NAD Junction → Pendurthi' },
+    '400K': { label: '400K', route: 'Rushikonda → Bheemili' },
 };
 
 let stopsMap = null;
