@@ -1,8 +1,8 @@
 import sqlite3
 
-print("Connecting to apsrtc.db via pure sqlite3...")
+print("Connecting to instance/apsrtc.db via pure sqlite3...")
 try:
-    conn = sqlite3.connect('apsrtc.db')
+    conn = sqlite3.connect('instance/apsrtc.db')
     cursor = conn.cursor()
 
     coords_map = {
@@ -17,16 +17,13 @@ try:
 
     count = 0
     for stop_name, (lat, lng) in coords_map.items():
-        # Update Route 1, 2, 3 stops
         cursor.execute("UPDATE stops SET lat = ?, lng = ? WHERE stop_name = ?", (lat, lng, stop_name))
         count += cursor.rowcount
         if cursor.rowcount > 0:
             print(f"Updated {stop_name} to {lat}, {lng} (affected {cursor.rowcount} rows)")
-        
-        # In case the table naming was different or whatever, this pure SQL just works.
     
     conn.commit()
     conn.close()
-    print(f"Total rows updated: {count}")
+    print(f"Total rows updated in instance: {count}")
 except Exception as e:
     print(f"Error: {e}")
