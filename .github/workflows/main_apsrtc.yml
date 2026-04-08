@@ -4,32 +4,25 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: apsrtc-tracker-1122    # Your Azure App Service name
-  PYTHON_VERSION: '3.11'                    # Matches runtime.txt
-
-permissions:
-  id-token: write   # Required for federated credential login
-  contents: read
+  AZURE_WEBAPP_NAME: apsrtc-tracker-1122
+  PYTHON_VERSION: '3.11'
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # ── 1. Checkout ──────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. Set up Python ─────────────────────────────────────────
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      # ── 3. Install dependencies ───────────────────────────────────
       - name: Install dependencies
         run: |
           cp requirements.txt Backend/
@@ -38,26 +31,15 @@ jobs:
           source antenv/bin/activate
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install werkzeug
 
-      # ── 4. Zip artifact for deployment ───────────────────────────
       - name: Zip deployment package
         run: |
           cd Backend
-          zip -r ../release.zip . -x "*.pyc" -x "__pycache__/*" -x ".venv/*" -x "*.db"
+          zip -r ../release.zip . -x "*.pyc" -x "__pycache__/*" -x ".venv/*" -x "*.db" -x "venv2/*"
 
-      # ── 5. Login to Azure using Service Principal (Federated) ────
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_6464AF1D79A144548D8B849202016F73 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_11777FC3361F4064A26B834E49B67EEF }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_35495840F08A4BA1A5D5D48561A24313 }}
-
-      # ── 6. Deploy to Azure App Service ───────────────────────────
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          slot-name: production
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: release.zip
