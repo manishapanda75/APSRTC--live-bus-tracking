@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Driver Dashboard — APSRTC Live</title>
   <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/js/translations.js"></script>
   <style>
     body { background: var(--bg); }
     .driver-main { max-width: 680px; margin: 0 auto; padding: 1.5rem; }
@@ -27,9 +28,14 @@
   </div>
   <div class="header-spacer"></div>
   <div class="header-clock" id="headerClock"></div>
+  <div class="lang-switcher">
+    <button class="lang-btn active" data-lang="en" onclick="applyLanguage('en')">EN</button>
+    <button class="lang-btn" data-lang="te" onclick="applyLanguage('te')">తె</button>
+    <button class="lang-btn" data-lang="hi" onclick="applyLanguage('hi')">हि</button>
+  </div>
   <div style="display:flex;align-items:center;gap:0.75rem;">
     <span style="font-size:0.875rem;color:rgba(255,255,255,0.8);">🚗 {{ username }}</span>
-    <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3);" onclick="logout()">Logout</button>
+    <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3);" onclick="logout()" data-i18n="logout">Logout</button>
   </div>
 </header>
 
@@ -39,10 +45,10 @@
   <div class="driver-card" style="margin-bottom:1.25rem;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
       <div>
-        <div style="font-size:0.85rem;opacity:0.75;margin-bottom:0.25rem;">Assigned Service</div>
+        <div style="font-size:0.85rem;opacity:0.75;margin-bottom:0.25rem;" data-i18n="assigned_service">Assigned Service</div>
         <div style="font-size:2rem;font-weight:800;" id="assignedServiceNo">—</div>
       </div>
-      <div id="liveStatusBadge" class="status-indicator"><span class="dot-off"></span> Offline</div>
+      <div id="liveStatusBadge" class="status-indicator"><span class="dot-off"></span> <span data-i18n="offline">Offline</span></div>
     </div>
     <div id="assignedRoute" style="opacity:0.85;font-size:0.95rem;">Loading your assignment...</div>
     <div style="margin-top:0.75rem;font-size:0.8rem;opacity:0.65;" id="lastUpdateTime"></div>
@@ -50,25 +56,25 @@
 
   <!-- Location Broadcast Card -->
   <div class="location-card" style="margin-bottom:1.25rem;">
-    <h3 style="margin-bottom:1rem;">📍 Location Broadcast</h3>
-    <div class="coord-box" id="coordDisplay">Press the button below to start sharing your location</div>
+    <h3 style="margin-bottom:1rem;" data-i18n="location_broadcast">📍 Location Broadcast</h3>
+    <div class="coord-box" id="coordDisplay" data-i18n="broadcast_prompt">Press the button below to start sharing your location</div>
 
     <div style="margin-top:1.25rem;display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
       <div>
-        <div class="form-label" style="margin-bottom:0.3rem;">Speed (km/h)</div>
+        <div class="form-label" style="margin-bottom:0.3rem;" data-i18n="speed_kmh">Speed (km/h)</div>
         <input type="number" id="speedInput" class="form-control" value="0" min="0" max="120" placeholder="Current speed">
       </div>
       <div>
-        <div class="form-label" style="margin-bottom:0.3rem;">Service Override</div>
+        <div class="form-label" style="margin-bottom:0.3rem;" data-i18n="service_override">Service Override</div>
         <input type="text" id="serviceInput" class="form-control" placeholder="Auto-filled" id="serviceOverride">
       </div>
     </div>
 
     <div style="margin-top:1.25rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
       <button class="location-btn" style="flex:1;" id="startBtn" onclick="startBroadcast()">
-        📡 Start Broadcasting Location
+        📡 <span data-i18n="start_broadcast">Start Broadcasting Location</span>
       </button>
-      <button class="btn btn-ghost" style="flex:0 0 auto;" id="stopBtn" onclick="stopBroadcast()" disabled>Stop</button>
+      <button class="btn btn-ghost" style="flex:0 0 auto;" id="stopBtn" onclick="stopBroadcast()" disabled data-i18n="stop_btn">Stop</button>
     </div>
 
     <div style="margin-top:0.75rem;" id="broadcastStatus"></div>
@@ -77,8 +83,8 @@
   <!-- Log -->
   <div class="location-card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
-      <h4>📋 Broadcast Log</h4>
-      <button class="btn btn-ghost btn-sm" onclick="clearLog()">Clear</button>
+      <h4 data-i18n="broadcast_log">📋 Broadcast Log</h4>
+      <button class="btn btn-ghost btn-sm" onclick="clearLog()" data-i18n="clear">Clear</button>
     </div>
     <div class="log-box" id="logBox">Waiting for broadcast to start...</div>
   </div>

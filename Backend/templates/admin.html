@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel — APSRTC Live</title>
   <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/js/translations.js"></script>
   <style>
     body { display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
     .page-wrapper { display: flex; flex: 1; }
@@ -22,10 +23,15 @@
   </div>
   <div class="header-spacer"></div>
   <div class="header-clock" id="headerClock"></div>
+  <div class="lang-switcher">
+    <button class="lang-btn active" data-lang="en" onclick="applyLanguage('en')">EN</button>
+    <button class="lang-btn" data-lang="te" onclick="applyLanguage('te')">తె</button>
+    <button class="lang-btn" data-lang="hi" onclick="applyLanguage('hi')">हि</button>
+  </div>
   <div style="display:flex;align-items:center;gap:0.75rem;">
     <span style="font-size:0.875rem;color:rgba(255,255,255,0.8);">👤 {{ username }}</span>
     <a href="/" class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3);">← Back to Site</a>
-    <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3);" onclick="logout()">Logout</button>
+    <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3);" onclick="logout()" data-i18n="logout">Logout</button>
   </div>
 </header>
 
@@ -37,7 +43,7 @@
   <div class="sidebar-nav">
     <div class="sidebar-item active" id="nav-overview" onclick="showPanel('overview')">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      Overview
+      <span data-i18n="overview">Overview</span>
     </div>
   </div>
   <div class="sidebar-divider"></div>
@@ -45,34 +51,34 @@
   <div class="sidebar-nav">
     <div class="sidebar-item" id="nav-routes" onclick="showPanel('routes')">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
-      Routes
+      <span data-i18n="routes">Routes</span>
     </div>
     <div class="sidebar-item" id="nav-services" onclick="showPanel('services')">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8Z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-      Services
+      <span data-i18n="services">Services</span>
     </div>
     <div class="sidebar-item" id="nav-vehicles" onclick="showPanel('vehicles')">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-3"/><circle cx="9" cy="17" r="2"/><circle cx="19" cy="17" r="2"/></svg>
-      Vehicles
+      <span data-i18n="vehicles">Vehicles</span>
     </div>
     <div class="sidebar-item" id="nav-stops" onclick="showPanel('stops')">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-      Stops
+      <span data-i18n="stops">Stops</span>
     </div>
     <div class="sidebar-item" id="nav-drivers" onclick="showPanel('drivers')">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Drivers
+      <span data-i18n="drivers">Drivers</span>
     </div>
     <div class="sidebar-item" id="nav-schedule" onclick="showPanel('schedule')">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-      Bus Schedule
+      <span data-i18n="bus_schedule">Bus Schedule</span>
     </div>
   </div>
   <div class="sidebar-divider"></div>
   <div class="sidebar-nav">
     <div class="sidebar-item" id="nav-admins" onclick="showPanel('admins')">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      Admins
+      <span data-i18n="admins">Admins</span>
     </div>
   </div>
 </nav>
