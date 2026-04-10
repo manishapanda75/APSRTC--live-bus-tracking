@@ -24,6 +24,23 @@ from sqlalchemy import or_, and_
 from sqlalchemy.exc import IntegrityError
 
 from models import db, Route, Service, Vehicle, Stop, TimetableEntry, Driver, User, LiveLocation, BusSchedule
+import json
+import os
+
+# Load translation files into a global dict
+TRANSLATIONS = {}
+TRANSLATION_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'i18n')
+for lang_file in ['en.json', 'hi.json', 'te.json']:
+    path = os.path.join(TRANSLATION_DIR, lang_file)
+    if os.path.exists(path):
+        with open(path, 'r', encoding='utf-8') as f:
+            TRANSLATIONS[lang_file.split('.')[0]] = json.load(f)
+
+def t(key):
+    """Translate a key based on the current session language"""
+    lang = session.get('lang', 'en')
+    return TRANSLATIONS.get(lang, {}).get(key, key)
+
 
 load_dotenv()
 
@@ -33,6 +50,9 @@ load_dotenv()
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 Talisman(app, content_security_policy=None, force_https=False)
+
+# Register translation function for Jinja templates
+app.jinja_env.globals['t'] = t
 limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day", "50 per hour"])
 
 cache = Cache(app, config={
@@ -46,6 +66,12 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV', 'development') == 'production'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Ensure a default language is set for each request
+@app.before_request
+def set_default_language():
+    if 'lang' not in session:
+        session['lang'] = 'en'
 
 # ── Database ──
 _db_url = os.getenv('DATABASE_URL', '')
@@ -280,6 +306,16 @@ def driver_login_page():
     if "driver_id" in session:
         return redirect("/driver")
     return render_template("driver_login.html")
+
+# Route to change language
+@app.route('/set_language/<lang>')
+def set_language(lang):
+    if lang not in TRANSLATIONS:
+        lang = 'en'
+    session['lang'] = lang
+    # Redirect back to the referring page or home
+    ref = request.referrer or '/' 
+    return redirect(ref)
 
 @app.route("/driver")
 def driver_dashboard():
