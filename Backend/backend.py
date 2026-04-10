@@ -58,6 +58,12 @@ else:
 
 db.init_app(app)
 
+with app.app_context():
+    try:
+        db.create_all()
+    except Exception as e:
+        print(f"Database Initialization Error: {e}", flush=True)
+
 CORS(app)
 
 # ─── Haversine Distance Helper ─────────────────────────
@@ -383,19 +389,24 @@ def user_login():
     password = data.get("password")
     remember = data.get("remember", False)
 
-    user = User.query.filter_by(username=username).first()
+    try:
+        user = User.query.filter_by(username=username).first()
 
-    if user and check_password_hash(user.password, password):
-        session.clear()
-        session["user_id"] = user.id
-        session["username"] = user.username
-        session["is_admin"] = user.is_admin
-        session.permanent = True if remember else False
+        if user and check_password_hash(user.password, password):
+            session.clear()
+            session["user_id"] = user.id
+            session["username"] = user.username
+            session["is_admin"] = user.is_admin
+            session.permanent = True if remember else False
 
-        redirect_url = "/admin" if user.is_admin else "/"
-        return jsonify({"message": "Login successful", "redirect": redirect_url, "is_admin": user.is_admin})
-    
-    return jsonify({"error": "Invalid credentials"}), 401
+            redirect_url = "/admin" if user.is_admin else "/"
+            return jsonify({"message": "Login successful", "redirect": redirect_url, "is_admin": user.is_admin})
+        
+        return jsonify({"error": "Invalid credentials"}), 401
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Database Server Error: {str(e)}"}), 500
 
 @app.route("/api/user/logout", methods=["POST"])
 def user_logout():
@@ -414,34 +425,39 @@ def driver_login():
     username = data.get("username")
     password = data.get("password")
 
-    driver = Driver.query.filter_by(username=username).first()
+    try:
+        driver = Driver.query.filter_by(username=username).first()
 
-    if driver and check_password_hash(driver.password, password):
-        session.clear()
-        session["driver_id"] = driver.id
-        session["username"] = driver.username
-        session.permanent = True
+        if driver and check_password_hash(driver.password, password):
+            session.clear()
+            session["driver_id"] = driver.id
+            session["username"] = driver.username
+            session.permanent = True
 
-        # Include assigned service info
-        assigned_service = None
-        if driver.assigned_service_id:
-            svc = Service.query.get(driver.assigned_service_id)
-            if svc:
-                assigned_service = {
-                    "service_id": svc.service_id,
-                    "service_no": svc.service_no,
-                    "route": svc.route.route_name if svc.route else ""
-                }
+            # Include assigned service info
+            assigned_service = None
+            if driver.assigned_service_id:
+                svc = Service.query.get(driver.assigned_service_id)
+                if svc:
+                    assigned_service = {
+                        "service_id": svc.service_id,
+                        "service_no": svc.service_no,
+                        "route": svc.route.route_name if svc.route else ""
+                    }
+            
+            session["assigned_service_no"] = assigned_service["service_no"] if assigned_service else None
+
+            return jsonify({
+                "message": "Login successful",
+                "redirect": "/driver",
+                "assigned_service": assigned_service
+            })
         
-        session["assigned_service_no"] = assigned_service["service_no"] if assigned_service else None
-
-        return jsonify({
-            "message": "Login successful",
-            "redirect": "/driver",
-            "assigned_service": assigned_service
-        })
-    
-    return jsonify({"error": "Invalid credentials"}), 401
+        return jsonify({"error": "Invalid credentials"}), 401
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Database Server Error: {str(e)}"}), 500
 
 @app.route("/api/driver/logout", methods=["POST"])
 def driver_logout():
