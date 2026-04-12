@@ -82,4 +82,12 @@ jobs:
           app-name: 'apsrtc-tracker-1122'
           slot-name: 'Production'
           package: release.zip
-          startup-command: 'gunicorn --chdir Backend backend:app --workers 4 --threads 2 --worker-class gthread --timeout 120 --preload --log-level info'
+          startup-command: 'bash startup.sh'
+
+      - name: 'Set Web App Configuration'
+        uses: azure/CLI@v1
+        with:
+          azcliversion: 2.53.0
+          inlineScript: |
+            az webapp config set --resource-group "APSRTC-RG" --name "apsrtc-tracker-1122" --web-sockets-enabled true
+            az webapp config appsettings set --resource-group "APSRTC-RG" --name "apsrtc-tracker-1122" --settings DATABASE_URL="${{ secrets.DATABASE_URL }}" SECRET_KEY="${{ secrets.SECRET_KEY }}" ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}" SCM_DO_BUILD_DURING_DEPLOYMENT=true

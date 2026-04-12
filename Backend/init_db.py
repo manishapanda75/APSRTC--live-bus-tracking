@@ -1,6 +1,7 @@
 import os
 from flask import Flask
 from werkzeug.security import generate_password_hash
+from sqlalchemy import text
 from models import db, Route, Service, Vehicle, Stop, TimetableEntry, Driver, User, LiveLocation
 
 def create_app():
@@ -150,18 +151,22 @@ def migrate():
             user_columns = [col['name'] for col in inspector.get_columns('users')]
             if 'is_admin' not in user_columns:
                 print("[...] Adding 'is_admin' column to users table...")
-                db.engine.execute("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE")
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE"))
+                    conn.commit()
                 print("[OK] 'is_admin' column added.")
             
             # Check if 'assigned_service_id' column exists in drivers table
             driver_columns = [col['name'] for col in inspector.get_columns('drivers')]
             if 'assigned_service_id' not in driver_columns:
                 print("[...] Adding 'assigned_service_id' column to drivers table...")
-                db.engine.execute("ALTER TABLE drivers ADD COLUMN assigned_service_id INTEGER REFERENCES services(service_id)")
+                with db.engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE drivers ADD COLUMN assigned_service_id INTEGER REFERENCES services(service_id)"))
+                    conn.commit()
                 print("[OK] 'assigned_service_id' column added.")
 
         except Exception as e:
-            print(f"[WARN] Migration check error (may be normal for new DB): {e}")
+            print(f"[WARN] Migration check error: {e}")
         
         print("[OK] Migration complete!")
 

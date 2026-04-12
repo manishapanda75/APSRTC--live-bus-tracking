@@ -9,3 +9,5 @@ Flask-SQLAlchemy==3.1.1
 psycopg2-binary==2.9.9
 SQLAlchemy==2.0.23
 werkzeug==3.0.1
+gevent==23.9.1
+gevent-websocket==0.10.1

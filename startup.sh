@@ -12,21 +12,19 @@ echo "│   APSRTC Live Bus Tracking — v7.0       │"
 echo "│   Starting on Azure App Service...      │"
 echo "└─────────────────────────────────────────┘"
 
-# Navigate to Backend directory (Azure deploys from repo root)
+# Navigate to Backend directory
 cd Backend
 
 # Run database migration (creates tables + admin user if needed)
-echo "[STARTUP] Running database migration..."
+echo "[STARTUP] Running database migration/init..."
 python init_db.py
 echo "[STARTUP] Migration complete."
 
-# Start the app with gunicorn + gevent for WebSocket support
-echo "[STARTUP] Starting Gunicorn with WebSocket support..."
+# Start the app with gunicorn
+# We use gevent-websocket worker for better live tracking support
+echo "[STARTUP] Starting Gunicorn..."
 gunicorn --bind=0.0.0.0:${PORT:-8000} \
          --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker \
-         --workers 1 \
+         --workers 2 \
          --timeout 120 \
-         --access-logfile '-' \
-         --error-logfile '-' \
-         --log-level info \
          backend:app
