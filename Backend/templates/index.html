@@ -92,17 +92,17 @@
       <div class="hero-subtitle" data-i18n="search_subtitle">Visakhapatnam APSRTC — Real-time schedules from RTC Complex</div>
       <div class="search-row">
         <div class="form-group">
-          <label class="form-label" data-i18n="from">From</label>
+          <label class="form-label" data-i18n="from" for="fromSelect">From</label>
           <select id="fromSelect" class="form-control"><option value="RTC Complex" data-i18n-option="rtc_complex">RTC Complex</option></select>
         </div>
         <div class="form-group">
-          <label class="form-label" data-i18n="to">To</label>
+          <label class="form-label" data-i18n="to" for="toSelect">To</label>
           <select id="toSelect" class="form-control" onchange="searchBuses()">
             <option value="" data-i18n-option="all_destinations">All Destinations</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label" data-i18n="bus_type">Bus Type</label>
+          <label class="form-label" data-i18n="bus_type" for="typeSelect">Bus Type</label>
           <select id="typeSelect" class="form-control" onchange="searchBuses()">
             <option value="" data-i18n-option="all_types">All Types</option>
             <option value="Metro Express" data-i18n-option="metro_express">Metro Express</option>
@@ -156,7 +156,7 @@
     <div class="card card-body" style="margin-bottom:1rem;">
       <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end;">
         <div class="form-group" style="flex:1;min-width:200px;">
-          <label class="form-label" data-i18n="select_service">Select Bus Service</label>
+          <label class="form-label" data-i18n="select_service" for="liveServiceSelect">Select Bus Service</label>
           <select id="liveServiceSelect" class="form-control" onchange="document.getElementById('liveServiceNo').value=this.value">
             <option value="" data-i18n-option="all_types">— choose a service —</option>
             <option value="28A">28A — RTC Complex → Gajuwaka</option>
@@ -165,7 +165,7 @@
           </select>
         </div>
         <div class="form-group" style="flex:1;min-width:160px;">
-          <label class="form-label" data-i18n="type_service">Or type service no.</label>
+          <label class="form-label" data-i18n="type_service" for="liveServiceNo">Or type service no.</label>
           <input type="text" id="liveServiceNo" class="form-control" data-i18n-placeholder="search_placeholder" placeholder="Search destination or route...">
         </div>
         <div class="form-group">

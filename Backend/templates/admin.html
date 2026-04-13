@@ -236,8 +236,14 @@
     </div>
     <div class="card card-body" style="max-width:460px;">
       <div class="form-grid">
-        <div class="form-group"><label class="form-label" data-i18n="username">Username</label><input type="text" id="newAdminUser" class="form-control" placeholder="Admin username"></div>
-        <div class="form-group"><label class="form-label" data-i18n="password">Password</label><input type="password" id="newAdminPass" class="form-control" placeholder="Strong password"></div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="username" for="newAdminUser">Username</label>
+          <input type="text" id="newAdminUser" class="form-control" placeholder="Admin username">
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="password" for="newAdminPass">Password</label>
+          <input type="password" id="newAdminPass" class="form-control" placeholder="Strong password">
+        </div>
       </div>
       <div style="margin-top:1rem;" class="g-recaptcha" data-sitekey="6LdgW7UsAAAAAD-J2vjS3aFXCC1d2irNpKObHpWN"></div>
       <p class="captcha-error" id="admin-captcha-error" style="color:var(--orange); display:none; font-size:0.875rem;" data-i18n="captcha_error">
@@ -257,10 +263,19 @@
   <div class="modal-card">
     <div class="modal-header"><h3 class="modal-title" data-i18n="add_route">Add Route</h3><button class="modal-close" onclick="closeModal('addRouteModal')">✕</button></div>
     <div style="display:flex;flex-direction:column;gap:1rem;">
-      <div class="form-group"><label class="form-label">Route Name</label><input type="text" id="rName" class="form-control" placeholder="e.g. Gajuwaka → Beach Road"></div>
+      <div class="form-group">
+        <label class="form-label" for="rName">Route Name</label>
+        <input type="text" id="rName" class="form-control" placeholder="e.g. Gajuwaka → Beach Road">
+      </div>
       <div class="form-grid">
-        <div class="form-group"><label class="form-label" data-i18n="from">From Station</label><input type="text" id="rFrom" class="form-control" placeholder="From"></div>
-        <div class="form-group"><label class="form-label" data-i18n="to">To Station</label><input type="text" id="rTo" class="form-control" placeholder="To"></div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="from" for="rFrom">From Station</label>
+          <input type="text" id="rFrom" class="form-control" placeholder="From">
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="to" for="rTo">To Station</label>
+          <input type="text" id="rTo" class="form-control" placeholder="To">
+        </div>
       </div>
       <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
         <button class="btn btn-ghost" onclick="closeModal('addRouteModal')" data-i18n="cancel">Cancel</button>
@@ -276,14 +291,24 @@
     <div class="modal-header"><h3 class="modal-title" data-i18n="add_service">Add Service</h3><button class="modal-close" onclick="closeModal('addServiceModal')">✕</button></div>
     <div style="display:flex;flex-direction:column;gap:1rem;">
       <div class="form-grid">
-        <div class="form-group"><label class="form-label">Service No</label><input type="text" id="sNo" class="form-control" placeholder="e.g. 28A"></div>
-        <div class="form-group"><label class="form-label">Route ID</label><input type="number" id="sRoute" class="form-control" placeholder="Route ID"></div>
+        <div class="form-group">
+          <label class="form-label" for="sNo">Service No</label>
+          <input type="text" id="sNo" class="form-control" placeholder="e.g. 28A">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="sRoute">Route ID</label>
+          <input type="number" id="sRoute" class="form-control" placeholder="Route ID">
+        </div>
       </div>
       <div class="form-grid">
-        <div class="form-group"><label class="form-label" data-i18n="bus_type">Service Type</label>
+        <div class="form-group">
+          <label class="form-label" data-i18n="bus_type" for="sType">Service Type</label>
           <select id="sType" class="form-control"><option>Express</option><option>Metro Express</option><option>Ordinary</option></select>
         </div>
-        <div class="form-group"><label class="form-label" data-i18n="fare">Ticket Price (₹)</label><input type="number" id="sPrice" class="form-control" placeholder="0"></div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="fare" for="sPrice">Ticket Price (₹)</label>
+          <input type="number" id="sPrice" class="form-control" placeholder="0">
+        </div>
       </div>
       <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
         <button class="btn btn-ghost" onclick="closeModal('addServiceModal')" data-i18n="cancel">Cancel</button>

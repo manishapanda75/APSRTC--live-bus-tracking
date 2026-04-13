@@ -34,14 +34,14 @@
     <div id="loginForm">
       <div style="display:flex;flex-direction:column;gap:1rem;">
         <div class="form-group">
-          <label class="form-label" data-i18n="username">Username</label>
+          <label class="form-label" data-i18n="username" for="loginUser">Username</label>
           <input type="text" id="loginUser" class="form-control" placeholder="Enter your username" autocomplete="username">
         </div>
         <div class="form-group">
-          <label class="form-label" data-i18n="password">Password</label>
+          <label class="form-label" data-i18n="password" for="loginPass">Password</label>
           <div style="position:relative;">
             <input type="password" id="loginPass" class="form-control" placeholder="Enter your password" autocomplete="current-password" style="padding-right:3rem;" onkeydown="if(event.key==='Enter')handleLogin()">
-            <button onclick="togglePass('loginPass', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);">👁</button>
+            <button onclick="togglePass('loginPass', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);" id="loginEyeBtn">👁</button>
           </div>
         </div>
         <div class="form-check">
@@ -65,14 +65,14 @@
     <div id="registerForm" class="hidden">
       <div style="display:flex;flex-direction:column;gap:1rem;">
         <div class="form-group">
-          <label class="form-label" data-i18n="chooseUsername">Choose Username</label>
+          <label class="form-label" data-i18n="chooseUsername" for="regUser">Choose Username</label>
           <input type="text" id="regUser" class="form-control" placeholder="Pick a username" autocomplete="username">
         </div>
         <div class="form-group">
-          <label class="form-label" data-i18n="choosePassword">Create Password</label>
+          <label class="form-label" data-i18n="choosePassword" for="regPass">Create Password</label>
           <div style="position:relative;">
             <input type="password" id="regPass" class="form-control" placeholder="Create a strong password" style="padding-right:3rem;" autocomplete="new-password">
-            <button onclick="togglePass('regPass', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);">👁</button>
+            <button onclick="togglePass('regPass', this)" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);" id="regEyeBtn">👁</button>
           </div>
         </div>
         <button class="btn btn-primary btn-block btn-lg" onclick="handleRegister()" data-i18n="createAccount">Create Account</button>

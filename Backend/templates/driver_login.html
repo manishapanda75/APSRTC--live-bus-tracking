@@ -38,11 +38,11 @@
 
     <div style="display:flex;flex-direction:column;gap:1.25rem;">
       <div class="form-group">
-        <label class="form-label" data-i18n="driver_username_label">DRIVER USERNAME</label>
+        <label class="form-label" data-i18n="driver_username_label" for="driverUser">DRIVER USERNAME</label>
         <input type="text" id="driverUser" class="form-control" data-i18n-placeholder="driver_username_placeholder" placeholder="Enter driver username" autocomplete="username">
       </div>
       <div class="form-group">
-        <label class="form-label" data-i18n="password_label">PASSWORD</label>
+        <label class="form-label" data-i18n="password_label" for="driverPass">PASSWORD</label>
         <div style="position:relative;">
           <input type="password" id="driverPass" class="form-control" data-i18n-placeholder="password_placeholder" placeholder="Enter password" style="padding-right:3rem;" autocomplete="current-password" onkeydown="if(event.key==='Enter')handleDriverLogin()">
           <button onclick="togglePass()" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);" id="eyeBtn">👁</button>
