@@ -16,6 +16,7 @@ from flask_cors import CORS
 from flask_caching import Cache
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
+import requests as http_requests
 from dotenv import load_dotenv
 from flask_talisman import Talisman
 from flask_limiter import Limiter
@@ -239,6 +240,20 @@ def admin_required(f):
             return jsonify({"error": "Admin access required"}), 403
         return f(*args, **kwargs)
     return decorated
+
+def verify_captcha(token):
+    secret = os.getenv("RECAPTCHA_SECRET_KEY")
+    if not secret:
+        # If no secret is configured, bypass for development
+        return True
+    try:
+        res = http_requests.post("https://www.google.com/recaptcha/api/siteverify", data={
+            "secret": secret,
+            "response": token
+        }, timeout=5)
+        return res.json().get("success", False)
+    except Exception:
+        return False
 
 def get_ist_time():
     """Return current IST datetime string HH:MM."""
@@ -580,6 +595,11 @@ def user_login():
     username = data.get("username")
     password = data.get("password")
     remember = data.get("remember", False)
+    captcha  = data.get("g-recaptcha-response")
+
+    if not verify_captcha(captcha):
+        return jsonify({"error": "CAPTCHA validation failed"}), 400
+
     try:
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
@@ -612,6 +632,11 @@ def driver_login():
     data     = request.json
     username = data.get("username")
     password = data.get("password")
+    captcha  = data.get("g-recaptcha-response")
+
+    if not verify_captcha(captcha):
+        return jsonify({"error": "CAPTCHA validation failed"}), 400
+
     try:
         driver = Driver.query.filter_by(username=username).first()
         if driver and check_password_hash(driver.password, password):
@@ -870,8 +895,13 @@ def create_admin_user():
     d = request.json
     username = d.get("username")
     password = d.get("password")
+    captcha  = d.get("g-recaptcha-response")
     if not username or not password:
         return jsonify({"error": "Missing username or password"}), 400
+    
+    if not verify_captcha(captcha):
+        return jsonify({"error": "CAPTCHA validation failed"}), 400
+
     try:
         user = User(username=username, password=generate_password_hash(password), is_admin=True)
         db.session.add(user); db.session.commit()

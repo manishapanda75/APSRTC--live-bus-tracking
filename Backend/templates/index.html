@@ -351,10 +351,12 @@ function countdownText(m) {
   if(m<=0) return translations[lang].departing_now || 'Departing now!';
   if(m<2) return translations[lang].departing_soon || 'Departing soon!';
   
-  const h=Math.floor(m/60),r=m%60;
+  const h=Math.floor(m/60), r=m%60;
   let text = translations[lang].next_in || "Next in";
-  let minLabel = translations[lang].min || "min";
-  return `${text} ${m} ${minLabel}`;
+  if (h > 0) {
+    return `${text} ${h}h ${r}m`;
+  }
+  return `${text} ${m}m`;
 }
 function typeBadge(t) {
   const lang = localStorage.getItem('lang') || 'en';

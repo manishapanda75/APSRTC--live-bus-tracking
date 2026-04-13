@@ -143,6 +143,7 @@ const translations = {
     not_assigned: "No route assigned yet",
     driver_info_box: "Driver accounts are created by admins only. Contact your supervisor if you cannot log in.",
     update_location: "Update My Location",
+    captcha_error: "Please complete the CAPTCHA verification"
   },
   te: {
     // Shared / Header
@@ -288,6 +289,7 @@ const translations = {
     not_assigned: "మార్గం కేటాయించబడలేదు",
     driver_info_box: "డ్రైవర్ ఖాతాలు అడ్మిన్ల ద్వారా మాత్రమే సృష్టించబడతాయి. మీరు లాగిన్ చేయలేకపోతే మీ సూపర్‌వైజర్‌ను సంప్రదించండి.",
     update_location: "లొకేషన్ అప్‌డేట్ చేయండి",
+    captcha_error: "దయచేసి CAPTCHA పూర్తి చేయండి"
   },
   hi: {
     // Shared / Header
@@ -433,6 +435,7 @@ const translations = {
     not_assigned: "कोई मार्ग नहीं सौंपा गया",
     driver_info_box: "ड्राइवर खाते केवल एडमिन द्वारा बनाए जाते हैं। यदि आप लॉगिन नहीं कर पा रहे हैं तो अपने पर्यवेक्षक से संपर्क करें।",
     update_location: "स्थान अपडेट करें",
+    captcha_error: "कृपया CAPTCHA सत्यापन पूरा करें"
   }
 };
 

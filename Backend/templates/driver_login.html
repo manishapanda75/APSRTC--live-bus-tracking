@@ -6,6 +6,7 @@
   <title>Driver Login — APSRTC Live</title>
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/js/translations.js"></script>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   <style>
     .login-logo-icon { background: linear-gradient(135deg, var(--orange) 0%, var(--orange-dark) 100%); }
     .driver-login-header { background: var(--blue-dark); padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; color: #fff; box-shadow: var(--shadow); }
@@ -46,6 +47,10 @@
           <button onclick="togglePass()" style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);" id="eyeBtn">👁</button>
         </div>
       </div>
+      <div class="g-recaptcha" data-sitekey="6Lf1RbUsAAAAACGlGi4ZInPD56izOe3HbzW5x7Ni"></div>
+      <p class="captcha-error" id="driver-captcha-error" style="color:var(--orange); display:none; font-size:0.875rem;" data-i18n="captcha_error">
+        Please complete the CAPTCHA verification
+      </p>
       <button class="btn btn-primary btn-block btn-lg" onclick="handleDriverLogin()" id="loginBtn" data-i18n="login_btn">Login</button>
     </div>
 
@@ -92,6 +97,13 @@ async function handleDriverLogin() {
     return showMsg(errorMsg, 'error');
   }
 
+  const captchaResponse = grecaptcha.getResponse();
+  if (!captchaResponse) {
+    document.getElementById('driver-captcha-error').style.display = 'block';
+    return;
+  }
+  document.getElementById('driver-captcha-error').style.display = 'none';
+
   const btn = document.getElementById('loginBtn');
   btn.disabled = true; 
   btn.textContent = lang === 'te' ? 'లాగిన్ అవుతోంది...' : 'Logging in...';
@@ -100,7 +112,7 @@ async function handleDriverLogin() {
     const res  = await fetch('/api/driver/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: user, password: pass })
+      body: JSON.stringify({ username: user, password: pass, 'g-recaptcha-response': captchaResponse })
     });
     const data = await res.json();
     if (res.ok && data.redirect) {

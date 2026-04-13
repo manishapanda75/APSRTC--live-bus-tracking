@@ -6,6 +6,7 @@
   <title>Login — APSRTC Live Bus Tracker</title>
   <meta name="description" content="Login to track APSRTC buses live in Visakhapatnam.">
   <link rel="stylesheet" href="/static/style.css">
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
 
@@ -46,6 +47,10 @@
           <input type="checkbox" id="rememberMe">
           <label for="rememberMe" data-i18n="rememberMe">Remember me for 30 days</label>
         </div>
+        <div class="g-recaptcha" data-sitekey="6Lf1RbUsAAAAACGlGi4ZInPD56izOe3HbzW5x7Ni"></div>
+        <p class="captcha-error" id="login-captcha-error" style="color:var(--orange); display:none; font-size:0.875rem;" data-i18n="captcha_error">
+          Please complete the CAPTCHA verification
+        </p>
         <button class="btn btn-blue btn-block btn-lg" onclick="handleLogin()" data-i18n="login">Login</button>
       </div>
       <div class="text-center" style="margin-top:1rem;">
@@ -113,6 +118,13 @@ async function handleLogin() {
   
   if (!user || !pass) return showMsg('Please fill all fields', 'error');
 
+  const captchaResponse = grecaptcha.getResponse();
+  if (!captchaResponse) {
+    document.getElementById('login-captcha-error').style.display = 'block';
+    return;
+  }
+  document.getElementById('login-captcha-error').style.display = 'none';
+
   const btn = document.querySelector('#loginForm .btn-blue');
   btn.disabled = true; btn.textContent = 'Logging in...';
 
@@ -120,7 +132,7 @@ async function handleLogin() {
     const res  = await fetch('/api/user/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: user, password: pass, remember })
+      body: JSON.stringify({ username: user, password: pass, remember, 'g-recaptcha-response': captchaResponse })
     });
     const data = await res.json();
     if (res.ok && data.redirect) {
