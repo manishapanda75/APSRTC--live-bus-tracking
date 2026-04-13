@@ -53,8 +53,13 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 _db_url = os.getenv('DATABASE_URL', '')
 if _db_url.startswith('postgres://'):
     _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+
 if not _db_url:
-    _db_url = 'sqlite:///apsrtc.db'
+    # Fix for Azure: root is ephemeral, /home is persistent
+    if os.environ.get('WEBSITE_HOSTNAME'):
+        _db_url = 'sqlite:////home/apsrtc.db'
+    else:
+        _db_url = 'sqlite:///apsrtc.db'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
