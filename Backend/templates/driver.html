@@ -4,9 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Driver Dashboard — APSRTC Live</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <link rel="icon" href="/static/favicon.ico">
-  <script src="/static/js/translations.js"></script>
+  <link rel="stylesheet" href="/static/style.css?v={{ v }}">
+  <link rel="icon" href="/static/favicon.ico?v={{ v }}">
+  <script src="/static/js/translations.js?v={{ v }}"></script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/static/service-worker.js').then(reg => reg.update());
+    });
+  }
+  </script>
   <style>
     body { background: var(--bg); }
     .driver-main { max-width: 680px; margin: 0 auto; padding: 1.5rem; }

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login — APSRTC Live Bus Tracker</title>
   <meta name="description" content="Login to track APSRTC buses live in Visakhapatnam.">
-  <link rel="stylesheet" href="/static/style.css">
-  <link rel="icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/style.css?v={{ v }}">
+  <link rel="icon" href="/static/favicon.ico?v={{ v }}">
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
@@ -95,8 +95,13 @@
       <a href="/driver/login" class="btn btn-ghost btn-block" data-i18n="driverPortal">
         🚗 Driver Portal
       </a>
-    </di<script src="/static/js/translations.js"></script>
+    </di<script src="/static/js/translations.js?v={{ v }}"></script>
 <script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/static/service-worker.js').then(reg => reg.update());
+  });
+}
 function togglePass(id, btn) {
   const inp = document.getElementById(id);
   inp.type = inp.type === 'password' ? 'text' : 'password';

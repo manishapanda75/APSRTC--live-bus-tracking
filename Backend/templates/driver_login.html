@@ -4,9 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Driver Login — APSRTC Live</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <link rel="icon" href="/static/favicon.ico">
-  <script src="/static/js/translations.js"></script>
+  <link rel="stylesheet" href="/static/style.css?v={{ v }}">
+  <link rel="icon" href="/static/favicon.ico?v={{ v }}">
+  <script src="/static/js/translations.js?v={{ v }}"></script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/static/service-worker.js').then(reg => reg.update());
+    });
+  }
+  </script>
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   <style>
     .login-logo-icon { background: linear-gradient(135deg, var(--orange) 0%, var(--orange-dark) 100%); }
