@@ -478,13 +478,16 @@ function applyLanguage(lang) {
   // Set HTML lang attribute
   document.documentElement.lang = lang;
 
-  // Trigger re-render of dynamic elements if functions exist
   if (typeof renderResults === 'function' && typeof allResults !== 'undefined') {
     renderResults(allResults);
   }
   if (typeof renderScheduleTable === 'function' && typeof schedData !== 'undefined') {
     renderScheduleTable(schedData);
   }
+  
+  // Re-run dynamic loaders if present
+  if (typeof loadStats === 'function') loadStats();
+  if (typeof loadDestinations === 'function') loadDestinations();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

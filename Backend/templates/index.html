@@ -303,29 +303,39 @@ async function loadStats() {
       <div class="stat-card"><div class="stat-icon stat-icon-green">📍</div><div class="stat-value">${d.total_destinations||10}</div><div class="stat-label" data-i18n="all_destinations"></div></div>
       <div class="stat-card"><div class="stat-icon stat-icon-yellow">🛣️</div><div class="stat-value">${d.total_routes||3}</div><div class="stat-label" data-i18n="routes"></div></div>
     `;
-    if(typeof applyLanguage === 'function') applyLanguage(localStorage.getItem('lang') || 'en');
+    // We update innerHTML, so we must re-translate these static labels
+    const lang = localStorage.getItem('lang') || 'en';
+    document.querySelectorAll('#statsGrid [data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (translations[lang] && translations[lang][key]) el.textContent = translations[lang][key];
+    });
   } catch(e){}
 }
 
 // ── Load Destinations ──────────────────────────────────
+let cachedDests = null;
 async function loadDestinations() {
-  const dests = await (await fetch('/api/destinations')).json();
+  if (!cachedDests) {
+    cachedDests = await (await fetch('/api/destinations')).json();
+  }
   const sel = document.getElementById('toSelect');
   const lang = localStorage.getItem('lang') || 'en';
-  const allDestLabel = translations[lang].all_destinations || "All Destinations";
+  const allDestLabel = (translations[lang] && translations[lang].all_destinations) || "All Destinations";
   
   const destDict = {
     'te': { 'Anakapalle': 'అనకాపల్లి', 'Bheemili': 'భీమిలి', 'Gajuwaka': 'గాజువాక', 'Kurmannapalem': 'కూర్మన్నపాలెం', 'Madhurawada': 'మధురవాడ', 'NAD Junction': 'ఎన్.ఎ.డి జంక్షన్', 'Pendurthi': 'పెందుర్తి', 'Rushikonda': 'రుషికొండ', 'Simhachalam': 'సింహాచలం', 'Steel Plant': 'స్టీల్ ప్లాంట్', 'RTC Complex': 'ఆర్టీసీ కాంప్లెక్స్' },
-    'hi': { 'Anakapalle': 'अनाकापल्ली', 'Bheemili': 'भीमिली', 'Gajuwaka': 'गाजुवाका', 'Kurmannapalem': 'कुर्मन्नपालेम', 'Madhurawada': 'मधुरवाड़ा', 'NAD Junction': 'एन.ए.डी जंक्शन', 'Pendurthi': 'पेंदुर्ति', 'Rushikonda': 'रुशिकोंडा', 'Simhachalam': 'सिंहाचलम', 'Steel Plant': 'स्टील प्लांट', 'RTC Complex': 'आरटीसी कॉम्प्लेक्स' }
+    'hi': { 'Anakapalle': 'अनाकापल्ली', 'Bheemili': 'भीमिली', 'Gajuwaka': 'गाजुवाका', 'Kurmannapalem': 'कुर्मन्नपालेम', 'Madhurawada': 'मधुरवाड़ा', 'NAD Junction': 'एन.ए.डी जंक्शन', 'Pendurthi': 'पेंदुर्ति', 'Rushikonda': 'रुशिकोंडा', 'Simहचल्म': 'सिंहाचलम', 'Steel Plant': 'स्टील प्लांट', 'RTC Complex': 'आरटीसी कॉम्प्लेक्स' }
   };
   
+  const currentVal = sel.value;
   sel.innerHTML = `<option value="" data-i18n-option="all_destinations">${allDestLabel}</option>`;
-  dests.forEach(d => { 
+  cachedDests.forEach(d => { 
     const o = document.createElement('option'); 
     o.value = d; 
     o.textContent = (destDict[lang] && destDict[lang][d]) ? destDict[lang][d] : d; 
     sel.appendChild(o); 
   });
+  if (currentVal) sel.value = currentVal;
 }
 
 // ── Bus Search ─────────────────────────────────────────

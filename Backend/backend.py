@@ -43,8 +43,9 @@ cache = Cache(app, config={
 
 app.secret_key = os.getenv("SECRET_KEY", "fallback_dev_key_change_me")
 
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV', 'development') == 'production'
+app.config['SESSION_PERMANENT'] = False
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
@@ -607,7 +608,6 @@ def user_login():
             session["user_id"]  = user.id
             session["username"] = user.username
             session["is_admin"] = user.is_admin
-            session.permanent   = bool(remember)
             redirect_url = "/admin" if user.is_admin else "/"
             return jsonify({"message": "Login successful", "redirect": redirect_url, "is_admin": user.is_admin})
         return jsonify({"error": "Invalid credentials"}), 401
@@ -643,7 +643,6 @@ def driver_login():
             session.clear()
             session["driver_id"] = driver.id
             session["username"]  = driver.username
-            session.permanent    = True
 
             assigned_service = None
             if driver.assigned_service_id:
