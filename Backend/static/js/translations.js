@@ -478,16 +478,11 @@ function applyLanguage(lang) {
   // Set HTML lang attribute
   document.documentElement.lang = lang;
 
-  if (typeof renderResults === 'function' && typeof allResults !== 'undefined') {
-    renderResults(allResults);
-  }
-  if (typeof renderScheduleTable === 'function' && typeof schedData !== 'undefined') {
-    renderScheduleTable(schedData);
-  }
-  
-  // Re-run dynamic loaders if present
+  // Re-run dynamic loaders if present on the page
   if (typeof loadStats === 'function') loadStats();
   if (typeof loadDestinations === 'function') loadDestinations();
+  if (typeof renderResults === 'function' && typeof allResults !== 'undefined') renderResults(allResults);
+  if (typeof renderScheduleTable === 'function' && typeof schedData !== 'undefined') renderScheduleTable(schedData);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
