@@ -334,6 +334,17 @@
 <div id="toast-container" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none;"></div>
 
 <script>
+// ── Session Auto Logout ────────────────────────────────
+window.addEventListener('load', () => {
+    if (!sessionStorage.getItem('tabOpen')) {
+        sessionStorage.setItem('tabOpen', 'true');
+    }
+});
+
+window.addEventListener('beforeunload', () => {
+    navigator.sendBeacon('/api/logout-session');
+});
+
 // ── Clock ──────────────────────────────────────────────
 function updateClock() {
   const now  = new Date();

@@ -81,10 +81,7 @@
       <span data-i18n="admin_panel">Admin Panel</span>
     </a>
     {% endif %}
-    <div class="sidebar-item" onclick="logout()">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      <span data-i18n="logout">Logout</span>
-    </div>
+
   </div>
 </nav>
 
@@ -297,6 +294,17 @@ if ('serviceWorker' in navigator) {
     window.location.reload();
   });
 }
+// ── Session Auto Logout ────────────────────────────────
+window.addEventListener('load', () => {
+    if (!sessionStorage.getItem('tabOpen')) {
+        sessionStorage.setItem('tabOpen', 'true');
+    }
+});
+
+window.addEventListener('beforeunload', () => {
+    navigator.sendBeacon('/api/logout-session');
+});
+
 // ── Clock ──────────────────────────────────────────────
 function updateClock() {
   const ist = new Date().toLocaleString('en-IN', {timeZone:'Asia/Kolkata', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});

@@ -738,6 +738,12 @@ def user_logout():
     return response
 
 
+@app.route("/api/logout-session", methods=["POST"])
+def logout_session():
+    session.clear()
+    return '', 204
+
+
 # ═══════════════════════════════════════════════════════
 # DRIVER AUTH
 # ═══════════════════════════════════════════════════════
