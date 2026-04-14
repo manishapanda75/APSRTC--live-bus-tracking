@@ -28,6 +28,25 @@ from models import db, Route, Service, Vehicle, Stop, TimetableEntry, Driver, Us
 
 load_dotenv()
 
+STOP_COORDINATES = {
+    "RTC Complex":        {"lat": 17.7231, "lng": 83.3012},
+    "Jagadamba Junction": {"lat": 17.7123, "lng": 83.3050},
+    "Maharani Peta":      {"lat": 17.7034, "lng": 83.2978},
+    "MVP Colony":         {"lat": 17.7425, "lng": 83.3389},
+    "Gajuwaka":           {"lat": 17.7004, "lng": 83.2168},
+    "NAD Junction":       {"lat": 17.7445, "lng": 83.2382},
+    "Steel Plant":        {"lat": 17.6542, "lng": 83.1961},
+    "Simhachalam":        {"lat": 17.7665, "lng": 83.2505},
+    "Pendurthi":          {"lat": 17.8012, "lng": 83.2156},
+    "Kurmannapalem":      {"lat": 17.6980, "lng": 83.1595},
+    "Madhurawada":        {"lat": 17.8225, "lng": 83.3522},
+    "Bheemili":           {"lat": 17.8897, "lng": 83.4563},
+    "Anakapalle":         {"lat": 17.6912, "lng": 82.9987},
+    "Rushikonda":         {"lat": 17.7823, "lng": 83.3912},
+    "Dwaraka Nagar":      {"lat": 17.7282, "lng": 83.3081},
+    "Siripuram Junction": {"lat": 17.7204, "lng": 83.3168},
+}
+
 # ═══════════════════════════════════════════════════════
 # APP CONFIG
 # ═══════════════════════════════════════════════════════
@@ -91,51 +110,47 @@ def _seed_demo_drivers():
     if Driver.query.count() > 0:
         return  # Already seeded
 
+    # A reusable stop generator with real coords
+    def get_coords(name):
+        res = STOP_COORDINATES.get(name, {"lat": 17.7, "lon": 83.3})
+        return res["lat"], res["lon"]
+
     DEMO = [
         {
             'route_name': 'RTC Complex - Gajuwaka',
-            'from': 'RTC Complex, Visakhapatnam',
-            'to': 'Gajuwaka',
+            'from': 'RTC Complex', 'to': 'Gajuwaka',
             'service_no': '28A',
-            'service_type': 'Express',
-            'ticket_price': 18,
-            'vehicle_no': 'AP31 V 1234',
+            'service_type': 'Metro Express',
+            'ticket_price': 55,
+            'vehicle_no': 'AP31 Z 1234',
             'driver_user': 'driver_28a',
             'driver_pass': 'pass28a',
             'stops': [
-                ('RTC Complex',         17.7231, 83.3012, 1),
-                ('Jagadamba Junction',  17.7185, 83.2998, 2),
-                ('Dwaraka Nagar',       17.7101, 83.2981, 3),
-                ('Seethammadhara',      17.7035, 83.2934, 4),
-                ('NAD Junction',        17.6954, 83.2889, 5),
-                ('Ukkunagaram',         17.6870, 83.2854, 6),
-                ('Gajuwaka',            17.6787, 83.2819, 7),
+                ('RTC Complex', *get_coords('RTC Complex'), 1),
+                ('Dwaraka Nagar', *get_coords('Dwaraka Nagar'), 2),
+                ('NAD Junction', *get_coords('NAD Junction'), 3),
+                ('Gajuwaka', *get_coords('Gajuwaka'), 4),
             ],
         },
         {
-            'route_name': 'RTC Complex - Steel Plant',
-            'from': 'RTC Complex, Visakhapatnam',
-            'to': 'Steel Plant',
+            'route_name': 'Steel Plant - Simhachalam',
+            'from': 'Steel Plant', 'to': 'Simhachalam',
             'service_no': '6K',
-            'service_type': 'Metro Express',
-            'ticket_price': 22,
-            'vehicle_no': 'AP31 V 5678',
+            'service_type': 'Express',
+            'ticket_price': 45,
+            'vehicle_no': 'AP31 Y 5678',
             'driver_user': 'driver_6k',
             'driver_pass': 'pass6k',
             'stops': [
-                ('RTC Complex',         17.7231, 83.3012, 1),
-                ('Jagadamba Junction',  17.7185, 83.2998, 2),
-                ('Kancharapalem',       17.7090, 83.2953, 3),
-                ('Gopalapatnam',        17.6988, 83.2902, 4),
-                ('Kurmannapalem',       17.6901, 83.2871, 5),
-                ('Ukkunagaram',         17.6870, 83.2854, 6),
-                ('Steel Plant Gate',    17.6812, 83.2801, 7),
+                ('Steel Plant', *get_coords('Steel Plant'), 1),
+                ('Kurmannapalem', *get_coords('Kurmannapalem'), 2),
+                ('NAD Junction', *get_coords('NAD Junction'), 3),
+                ('Simhachalam', *get_coords('Simhachalam'), 4),
             ],
         },
         {
-            'route_name': 'RTC Complex - Pendurthi',
-            'from': 'RTC Complex, Visakhapatnam',
-            'to': 'Pendurthi',
+            'route_name': 'RTC Complex - Madhurawada',
+            'from': 'RTC Complex', 'to': 'Madhurawada',
             'service_no': '400K',
             'service_type': 'Ordinary',
             'ticket_price': 30,
@@ -143,13 +158,10 @@ def _seed_demo_drivers():
             'driver_user': 'driver_400k',
             'driver_pass': 'pass400k',
             'stops': [
-                ('RTC Complex',         17.7231, 83.3012, 1),
-                ('Siripuram',           17.7278, 83.3098, 2),
-                ('Old Town',            17.7350, 83.3201, 3),
-                ('Kommadi',             17.7489, 83.3312, 4),
-                ('Madhurawada',         17.7602, 83.3489, 5),
-                ('Kapuluppada',         17.7712, 83.3601, 6),
-                ('Pendurthi',           17.7901, 83.3789, 7),
+                ('RTC Complex', *get_coords('RTC Complex'), 1),
+                ('Siripuram Junction', *get_coords('Siripuram Junction'), 2),
+                ('MVP Colony', *get_coords('MVP Colony'), 3),
+                ('Madhurawada', *get_coords('Madhurawada'), 4),
             ],
         },
     ]
@@ -228,6 +240,27 @@ with app.app_context():
 
     except Exception as e:
         print(f"DB init error: {e}")
+
+# ── Force Re-seed for New Coordinates ──
+# This block wipes and re-seeds once to apply exact GPS coordinates
+with app.app_context():
+    try:
+        # Check if we have the "precision" RTC coordinate (17.7231)
+        # If not, wipe and re-seed to apply it.
+        has_new_coords = Stop.query.filter_by(stop_name='RTC Complex', lat=17.7231).count() > 0
+        if Stop.query.count() > 0 and not has_new_coords:
+            print("[RESET] Wiping demo tables to apply precision GPS coordinates...", flush=True)
+            db.session.query(LiveLocation).delete()
+            db.session.query(Driver).delete()
+            db.session.query(Vehicle).delete()
+            db.session.query(TimetableEntry).delete()
+            db.session.query(Stop).delete()
+            db.session.query(Service).delete()
+            db.session.query(Route).delete()
+            db.session.commit()
+            _seed_demo_drivers()
+    except Exception as e:
+        print(f"Reset error: {e}")
 
 
 # ═══════════════════════════════════════════════════════
@@ -564,6 +597,36 @@ def bus_eta(service_no):
     })
 
 
+
+@app.route("/api/live-tracking/<service_no>")
+def api_live_tracking(service_no):
+    """Integrated endpoint for live tracking: returns location + stops with exact coordinates."""
+    # 1. Get Live Location
+    loc = db.session.query(LiveLocation).join(Vehicle).join(Service)\
+        .filter(Service.service_no == service_no).first()
+    
+    # 2. Get Stops
+    stops = db.session.query(Stop).join(Route).join(Service, Service.route_id == Route.route_id)\
+        .filter(Service.service_no == service_no).order_by(Stop.stop_order.asc()).all()
+    
+    if not stops:
+        return jsonify({"error": "Route details not found"}), 404
+        
+    res = {
+        "service_no": service_no,
+        "stops": [{"name": st.stop_name, "lat": st.lat, "lng": st.lng, "order": st.stop_order} for st in stops],
+        "live": None
+    }
+    
+    if loc:
+        res["live"] = {
+            "lat": loc.lat, 
+            "lng": loc.lon if hasattr(loc, 'lon') else loc.lng, # handles both naming conventions
+            "speed": loc.speed, 
+            "updated_at": loc.updated_at
+        }
+    
+    return jsonify(res)
 
 @cache.cached(timeout=600)
 def get_all_routes():

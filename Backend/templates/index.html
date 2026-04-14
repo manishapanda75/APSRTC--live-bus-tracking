@@ -493,9 +493,102 @@ const busIcon = L.divIcon({
   iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -22]
 });
 
+async function drawRoadRoute(stops) {
+    // Remove old route
+    if (window.routeLayer) liveMap.removeLayer(window.routeLayer);
+
+    // Build coordinate string for OSRM: lng,lat;lng,lat
+    const coords = stops.map(s => `${s.lng},${s.lat}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+
+    let roadPoints;
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        // Convert [lng,lat] to [lat,lng] for Leaflet
+        roadPoints = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        window.currentRoadPoints = roadPoints; // For bus animation
+    } catch(e) {
+        // If OSRM fails, fall back to straight lines
+        console.error('OSRM Routing Failed:', e);
+        roadPoints = stops.map(s => [s.lat, s.lng]);
+        window.currentRoadPoints = roadPoints;
+    }
+
+    // Draw thick highlighted road like Google Maps
+    window.routeLayer = L.featureGroup([
+        // Dark border underneath
+        L.polyline(roadPoints, {
+            color: '#1A56A4',
+            weight: 12,
+            opacity: 0.4,
+            lineJoin: 'round',
+            lineCap: 'round'
+        }),
+        // Bright blue road on top
+        L.polyline(roadPoints, {
+            color: '#4285F4',
+            weight: 7,
+            opacity: 1,
+            lineJoin: 'round',
+            lineCap: 'round'
+        })
+    ]).addTo(liveMap);
+
+    liveMap.fitBounds(window.routeLayer.getBounds(), {padding: [50,50]});
+}
+
+function createStopMarker(stop, isFirst, isLast, isCurrent) {
+    const size = isCurrent ? 22 : 16;
+    const bgColor = isFirst  ? '#00C853'
+                  : isLast   ? '#D50000'
+                  : isCurrent? '#FF6B00'
+                  : '#ffffff';
+    const borderColor = isCurrent ? '#FF6B00' : '#1a3a6b';
+
+    const icon = L.divIcon({
+        className: '',
+        html: `
+            <div style="
+                width:${size}px;
+                height:${size}px;
+                background:${bgColor};
+                border: 3px solid ${borderColor};
+                border-radius: 50%;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            "></div>`,
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
+    });
+
+    return L.marker([stop.lat, stop.lng], { icon })
+        .bindPopup(`<b>${stop.name}</b>`);
+}
+
+function animateBusOnRoad(fromPoint, toPoint, roadPoints, duration = 2000) {
+    if (!busMarker) {
+        busMarker = L.marker(toPoint, {icon: busIcon}).addTo(liveMap);
+        return;
+    }
+
+    let start = null;
+    function step(timestamp) {
+        if (!start) start = timestamp;
+        const progress = Math.min((timestamp - start) / duration, 1);
+
+        const lat = fromPoint[0] + (toPoint[0] - fromPoint[0]) * progress;
+        const lng = fromPoint[1] + (toPoint[1] - fromPoint[1]) * progress;
+        busMarker.setLatLng([lat, lng]);
+
+        if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+}
+
 function initMap() {
   if (liveMap) return;
-  liveMap = L.map('liveMap', {zoomControl: true}).setView([17.7231, 83.3012], 12);
+  // Precise initial centering on APSRTC Complex
+  liveMap = L.map('liveMap', {zoomControl: true}).setView([17.7231, 83.3012], 14);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
     maxZoom: 19
@@ -505,7 +598,7 @@ function initMap() {
 function clearMap() {
   stopMarkers.forEach(m => liveMap.removeLayer(m)); stopMarkers = [];
   if (busMarker)    { liveMap.removeLayer(busMarker);    busMarker = null; }
-  if (routePolyline){ liveMap.removeLayer(routePolyline); routePolyline = null; }
+  if (window.routeLayer) { liveMap.removeLayer(window.routeLayer); window.routeLayer = null; }
 }
 
 async function startTracking() {
@@ -544,10 +637,12 @@ function stopTracking() {
 
 async function loadRouteStops(svc) {
   try {
-    const res  = await fetch(`/api/route_details/${svc}`);
-    const stops = await res.json();
-    if (!stops || stops.error || !stops.length) return;
+    const res = await fetch(`/api/live-tracking/${svc}`);
+    const data = await res.json();
+    if (!data || data.error) return;
 
+    const stops = data.stops;
+    
     // Render stops list
     document.getElementById('stopsCard').style.display = 'block';
     document.getElementById('stopsContent').innerHTML = stops.map((s,i) =>
@@ -557,30 +652,20 @@ async function loadRouteStops(svc) {
        </div>`
     ).join('');
 
-    // Draw route line on map
-    const coords = stops.filter(s=>s.lat&&s.lng).map(s=>[s.lat,s.lng]);
-    if (coords.length >= 2) {
-      routePolyline = L.polyline(coords, {color:'#003580', weight:4, opacity:0.7, dashArray:'8 4'}).addTo(liveMap);
-    }
+    // Draw road-accurate route
+    await drawRoadRoute(stops);
 
-    // Draw stop markers
+    // Draw styled stop markers
     stops.forEach((s, i) => {
-      if (!s.lat || !s.lng) return;
-      const isFirst = i===0, isLast = i===stops.length-1;
-      const color = isFirst ? '#059669' : isLast ? '#dc2626' : '#FF6B00';
-      const m = L.circleMarker([s.lat, s.lng], {radius:8, fillColor:color, color:'#fff', weight:2, fillOpacity:1})
-        .bindPopup(`<strong>${s.name}</strong><br>Stop ${i+1}`)
-        .addTo(liveMap);
+      const m = createStopMarker(s, i===0, i===stops.length-1, false).addTo(liveMap);
       stopMarkers.push(m);
     });
-
-    if (coords.length) liveMap.fitBounds(L.latLngBounds(coords), {padding:[40,40]});
   } catch(e) { console.error('loadRouteStops error:', e); }
 }
 
 async function fetchLiveLocation(svc) {
   try {
-    const res = await fetch(`/api/live/${svc}`);
+    const res = await fetch(`/api/live-tracking/${svc}`);
     const d   = await res.json();
     const lang = localStorage.getItem('lang') || 'en';
 
@@ -588,7 +673,7 @@ async function fetchLiveLocation(svc) {
     const lastUpdateLabel = translations[lang].last_update || "Last update";
     document.getElementById('liveLastUpdate').textContent = `${lastUpdateLabel}: ${now}`;
 
-    if (d.error) {
+    if (!d.live) {
       const infoMsg = translations[lang].driver_note || "Driver hasn't started broadcasting yet.";
       document.getElementById('busInfoCard').style.display = 'block';
       document.getElementById('busInfoContent').innerHTML =
@@ -599,18 +684,15 @@ async function fetchLiveLocation(svc) {
       return;
     }
 
-    const lat = parseFloat(d.lat), lng = parseFloat(d.lng);
+    const lat = parseFloat(d.live.lat), lng = parseFloat(d.live.lng);
+    const fromPoint = busMarker ? [busMarker.getLatLng().lat, busMarker.getLatLng().lng] : [lat, lng];
 
-    // Animate bus marker
-    if (!busMarker) {
-      busMarker = L.marker([lat, lng], {icon: busIcon, zIndexOffset:1000}).addTo(liveMap);
-      liveMap.panTo([lat, lng]);
-    } else {
-      animateMarker(busMarker, busMarker.getLatLng(), L.latLng(lat, lng), 4000);
-    }
+    // Animate bus position along road
+    animateBusOnRoad(fromPoint, [lat, lng], window.currentRoadPoints);
+
     const speedLabel = translations[lang].speed || "Speed";
     const updatedLabel = translations[lang].updated || "Updated";
-    busMarker.bindPopup(`<strong>Service ${svc}</strong><br>⚡ ${d.speed} km/h<br>🕐 ${d.updated_at}`);
+    busMarker.bindPopup(`<strong>Service ${svc}</strong><br>⚡ ${d.live.speed} km/h<br>🕐 ${d.live.updated_at}`);
 
     // Info card
     document.getElementById('busInfoCard').style.display = 'block';
@@ -655,19 +737,7 @@ async function fetchETA(svc) {
   } catch(e){}
 }
 
-// Smooth marker animation between two lat/lngs
-function animateMarker(marker, startLatLng, endLatLng, duration) {
-  const startTime = performance.now();
-  function step(now) {
-    const elapsed = now - startTime;
-    const t = Math.min(elapsed / duration, 1);
-    const lat = startLatLng.lat + (endLatLng.lat - startLatLng.lat) * t;
-    const lng = startLatLng.lng + (endLatLng.lng - startLatLng.lng) * t;
-    marker.setLatLng([lat, lng]);
-    if (t < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
+// ... (animateBusOnRoad already handles this)
 
 // ══ Full Schedule ══════════════════════════════════════
 let schedData = [];

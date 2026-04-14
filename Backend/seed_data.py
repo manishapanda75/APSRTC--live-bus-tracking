@@ -11,6 +11,25 @@ STATIONS = [
     "Madhurawada", "NAD Junction", "Pendurthi", "Rushikonda", "Simhachalam", "Steel Plant"
 ]
 
+STOP_COORDINATES = {
+    "RTC Complex":        {"lat": 17.6868, "lon": 83.2185},
+    "Jagadamba Junction": {"lat": 17.6978, "lon": 83.2993},
+    "Maharani Peta":      {"lat": 17.7034, "lon": 83.2978},
+    "MVP Colony":         {"lat": 17.7342, "lon": 83.3012},
+    "Gajuwaka":           {"lat": 17.6820, "lon": 83.2054},
+    "NAD Junction":       {"lat": 17.7240, "lon": 83.2198},
+    "Steel Plant":        {"lat": 17.6925, "lon": 83.1734},
+    "Simhachalam":        {"lat": 17.7650, "lon": 83.2712},
+    "Pendurthi":          {"lat": 17.8012, "lon": 83.2156},
+    "Kurmannapalem":      {"lat": 17.7198, "lon": 83.2367},
+    "Madhurawada":        {"lat": 17.7840, "lon": 83.3721},
+    "Bheemili":           {"lat": 17.8897, "lon": 83.4563},
+    "Anakapalle":         {"lat": 17.6912, "lon": 82.9987},
+    "Rushikonda":         {"lat": 17.7823, "lon": 83.3912},
+    "Dwaraka Nagar":      {"lat": 17.7231, "lon": 83.3156},
+    "Siripuram Junction": {"lat": 17.7198, "lon": 83.3089},
+}
+
 def generate_schedule(source, dest, start_h=5, end_h=21, interval_min=25, duration_str="45m", base_fare=20):
     """Generate a list of schedules between two points throughout the day."""
     schedules = []
