@@ -305,6 +305,17 @@ window.addEventListener('beforeunload', () => {
     navigator.sendBeacon('/api/logout-session');
 });
 
+// On every page load check if session is still valid
+window.addEventListener('pageshow', async (event) => {
+    // pageshow fires on back button too, persisted = true means from cache
+    const res = await fetch('/api/check-session');
+    const data = await res.json();
+    if (!data.logged_in) {
+        // Session expired or logged out — force to login
+        window.location.replace('/login');
+    }
+});
+
 // ── Clock ──────────────────────────────────────────────
 function updateClock() {
   const ist = new Date().toLocaleString('en-IN', {timeZone:'Asia/Kolkata', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});

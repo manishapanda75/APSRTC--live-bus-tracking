@@ -103,6 +103,14 @@ else:
 db.init_app(app)
 CORS(app)
 
+@app.after_request
+def add_no_cache_headers(response):
+    # Prevent browser from caching any page
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
+
 # ── Global Template Version (Cache Busting) ──
 @app.context_processor
 def inject_version():
@@ -742,6 +750,20 @@ def user_logout():
 def logout_session():
     session.clear()
     return '', 204
+
+@app.route("/api/check-session")
+def check_session():
+    if "user_id" in session or "driver_id" in session:
+        return jsonify({"logged_in": True})
+    return jsonify({"logged_in": False})
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    response = make_response(redirect('/login'))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+    response.delete_cookie('session')
+    return response
 
 
 # ═══════════════════════════════════════════════════════
